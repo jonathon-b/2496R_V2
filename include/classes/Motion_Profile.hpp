@@ -4,28 +4,21 @@
 
 class Motion_Profile{
   private:
-    double max_velo = 0;
-    double max_accel = 0;
-    double jerk = 0;
+    double max_velo;
+    double max_accel;
   public:
-    Motion_Profile(double v, double a, double j) {//s-curve construction
-      max_velo = v;
-      max_accel = a;
-      jerk = j;
-    }
     Motion_Profile(double v, double a) {//trapezoidal construction
       max_velo = v;
       max_accel = a;
-      jerk = 0;
     }
 
     //1D motion profile
-    void trap_profile(double target_dist, double &projected_pos, double &current_v, double &current_a) {
+    void trap_1d(double target_dist, double &projected_pos, double &current_v, double &current_a) {
       double ramp_distance = max_velo * max_velo / 2 / max_accel;
       if(projected_pos < ramp_distance) {
         projected_pos += current_v * DT * MS_TO_S + 0.5 * max_accel * DT * DT * MS_TO_S * MS_TO_S;
         current_v += max_accel * DT * MS_TO_S;
-        current_v = std::min(max_velo, current_v);
+        current_v = std::fmin(max_velo, current_v);
         current_a = max_accel;
       }
       else if (projected_pos < target_dist - ramp_distance) {
@@ -34,11 +27,19 @@ class Motion_Profile{
         current_a = 0;
       }
       else {
+
         projected_pos += current_v * DT * MS_TO_S - 0.5 * max_accel * DT * DT * MS_TO_S * MS_TO_S;
-        projected_pos = std::max(projected_pos, target_dist);
+        projected_pos = std::fmin(projected_pos, target_dist);
         current_v -= max_accel * DT * MS_TO_S;
-        current_v = std::max(current_v, 0.0);
-        current_v == 0? current_a = 0 : current_a = -max_accel;
+        current_v = std::fmax(current_v, 0.0);
+        if(current_v == 0){
+          current_a = 0;
+          projected_pos = target_dist;
+        }
+        else {
+           current_a = -max_accel;
+        }
+        current_a = -max_accel;
       }
     }
 
@@ -46,10 +47,10 @@ class Motion_Profile{
       current_a = traj[A];
       current_v += traj[A] * DT * MS_TO_S;
       if(traj[A] > 0) {
-        current_v = std::min(current_v, traj[V]);
+        current_v = std::fmin(current_v, traj[V]);
       }
       else if (traj[A] < 0) {
-        current_v = std::max(current_v, traj[V]);
+        current_v = std::fmax(current_v, traj[V]);
       }
     }
     void update_2d(double &p_l, double &p_r, double v_l, double v_r, double a) {
@@ -89,14 +90,14 @@ class Motion_Profile{
         else {
           curvature = calculate_path_curvature(path[i-1], path[i], path[i+1]);
           delta_x = hypot(path[i-1][X] - path[i][X], path[i-1][Y] - path[i][Y]);
-          path[i][V] = std::min(1.5/curvature, sqrt(path[i-1][V] * path[i-1][V] + 2 * max_accel * delta_x) );
+          path[i][V] = std::fmin(1.5/curvature, sqrt(path[i-1][V] * path[i-1][V] + 2 * max_accel * delta_x) );
         }
       }
 
       for(int i = path.size()-1; i >= 0; i++) {//calculating backward acceleration
         if(i != 0 && i != path.size()-1) {
           delta_x = hypot(path[i+1][X] - path[i][X], path[i+1][Y] - path[i][Y]);
-          path[i][V] = std::min(path[i][V], sqrt(path[i+1][V] * path[i+1][V] + 2 * max_accel * delta_x) );
+          path[i][V] = std::fmin(path[i][V], sqrt(path[i+1][V] * path[i+1][V] + 2 * max_accel * delta_x) );
 
           if(path[i+1][V] - path[i][V] < 0) path[i][A] = -max_accel;
           else if (path[i+1][V] - path[i][V] > 0) path[i][A] = max_accel;

@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+
 #include "main.h"
+#include "../classes/PID.hpp"
 using namespace pros;
 
 extern Controller control;
@@ -12,8 +14,10 @@ extern Motor mtr_lift;
 extern Motor mtr_tilt;
 extern Motor mtr_rollL;
 extern Motor mtr_rollR;
+
 extern ADIEncoder enc_l;
 extern ADIEncoder enc_r;
+
 extern ADIAnalogIn pot;
 extern ADIDigitalIn limit;
 extern ADIDigitalIn bump;
@@ -36,21 +40,28 @@ extern ADILineSensor line;
 
 #define WHEELBASE 0
 
+#define GRAVFF 0
+#define KP_LIFT 40
+#define KI_LIFT 0.4
+#define KD_LIFT 120
+#define LIMIT_LIFT 100
+#define LIFT_MAX 4000
+
+#define LIFTH_BOTTOM 0
+#define LIFTH_SMALLTOWER -885
+#define LIFTH_BIGTOWER -1185
+
 #define DT 15
 #define MS_TO_S 1/1000
 
-#define KP_CHAS_POS 0
-#define KI_CHAS_POS 0
-#define KD_CHAS_POS 0
+extern int pot_offset;
 
-#define KP_CHAS_V 0
+extern Imu imu;
 
-#define KVFF_CHAS 0
-#define KAFF_CHAS 0
-#define KVFF_INT_CHAS 0
-
-
-
-
+extern double preset_heights[3];
+extern PID autolift;
+extern int index_heights;
+extern double lift_value;
+extern void pid_lift();
 
 #endif

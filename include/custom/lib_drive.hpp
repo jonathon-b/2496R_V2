@@ -8,10 +8,6 @@ extern void drive_lift();
 extern void drive_intake();
 extern void drive_tray();
 extern double tilt_offset;
-extern void pid_lift();
 
-extern PID autolift;
-extern double preset_heights[3];
-extern double lift_value;
-extern int index_heights;
+
 #endif

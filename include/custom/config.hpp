@@ -3,6 +3,7 @@
 
 #include "main.h"
 #include "../classes/PID.hpp"
+#include "../classes/PIV.hpp"
 using namespace pros;
 
 extern Controller control;
@@ -21,7 +22,7 @@ extern ADIEncoder enc_r;
 extern ADIAnalogIn pot;
 extern ADIDigitalIn limit;
 extern ADIDigitalIn bump;
-extern ADILineSensor line;
+extern ADIDigitalIn limit_index;
 /*
   CONSTANTS
 */
@@ -38,12 +39,13 @@ extern ADILineSensor line;
 #define DEG_TO_RAD PI/180
 #define RAD_TO_DEG 180/PI
 
-#define WHEELBASE 0
+#define WHEELBASE 400.0123
+//208.348289
 
 #define GRAVFF 0
-#define KP_LIFT 40
-#define KI_LIFT 0.4
-#define KD_LIFT 120
+#define KP_LIFT 50
+#define KI_LIFT 0.2
+#define KD_LIFT 200
 #define LIMIT_LIFT 100
 #define LIFT_MAX 4000
 

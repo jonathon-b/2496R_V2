@@ -17,9 +17,36 @@ void competition_initialize() {
 	while(imu.is_calibrating()) {}
 }
 
+double angle = 0;
+
 void autonomous() {
-	while(imu.is_calibrating()) {}
-	blue_auton();
+	//while(imu.is_calibrating()) {}
+	//blue_auton();
+	/*
+	pwr_intake(0);
+	mtr_chasBL.move_velocity(127);
+	mtr_chasFL.move_velocity(127);
+	mtr_chasBR.move_velocity(127);
+	mtr_chasFR.move_velocity(127);
+	delay(750);
+	pwr_intake(-100);
+	mtr_chasBL.move_velocity(-127);
+	mtr_chasFL.move_velocity(-127);
+	mtr_chasBR.move_velocity(-127);
+	mtr_chasFR.move_velocity(-127);
+	delay(750);
+	pwr_intake(0);
+	mtr_chasBL.move_velocity(0);
+	mtr_chasFL.move_velocity(0);
+	mtr_chasBR.move_velocity(0);
+	mtr_chasFR.move_velocity(0);
+	*/
+	while(true) {
+		angle = (enc_l.get_value() - enc_r.get_value())/ WHEELBASE * RAD_TO_DEG;
+		printf("angle: %.2f\n", angle);
+	}
+
+
 }
 
 bool lift_auto = false;

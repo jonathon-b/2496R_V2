@@ -147,10 +147,18 @@ void pwr_intake(int pwr) {
   mtr_rollL.move(pwr);
 }
 
+void lift(int pwr, int time){
+  mtr_lift.move(pwr);
+  delay(time);
+  mtr_lift.move(0);
+
+}
+
 void blue_auton(){
   pwr_intake(127);
-  forward(300, 400, 400, false);
-  forward(500, 250, 250, false);
+  lift(90, 300);
+  forward(300, 600, 500, false);
+  forward(600, 300, 300, false);
   pwr_intake(0);
   forward(600, 400,350, true);
 

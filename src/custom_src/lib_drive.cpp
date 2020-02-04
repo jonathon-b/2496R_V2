@@ -93,7 +93,7 @@ void drive_intake() {
   }
 
   if(one_in_state){
-    if (line.get_value() <=2500){
+    if (/*line.get_value() <=2500*/ limit_index.get_value()){
       mtr_rollR.move_velocity(0);
       mtr_rollL.move_velocity(0);
       one_in_state = false;

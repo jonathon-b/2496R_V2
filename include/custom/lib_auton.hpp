@@ -28,5 +28,7 @@ extern void pwr_intake(int pwr);
 
 extern void blue_auton();
 
+extern void lift(int pwr, int time);
+
 
 #endif

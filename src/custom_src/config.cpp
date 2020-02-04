@@ -13,7 +13,7 @@ Motor mtr_chasFR(7, E_MOTOR_GEARSET_36, false, E_MOTOR_ENCODER_COUNTS);
 Motor mtr_lift(3, E_MOTOR_GEARSET_36, false, E_MOTOR_ENCODER_COUNTS);
 Motor mtr_tilt(10, E_MOTOR_GEARSET_36, false, E_MOTOR_ENCODER_COUNTS);
 Motor mtr_rollL(5, E_MOTOR_GEARSET_18, false, E_MOTOR_ENCODER_COUNTS);
-Motor mtr_rollR(11, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_COUNTS);
+Motor mtr_rollR(13, E_MOTOR_GEARSET_18, true, E_MOTOR_ENCODER_COUNTS);
 
 //encoder(port,adjacent_port, reverse)
 
@@ -23,7 +23,7 @@ ADIDigitalIn limit(7);
 ADIDigitalIn bump(2);
 ADIEncoder enc_r(3,4,true);
 ADIEncoder enc_l(5,6,false);
-ADIAnalogIn line(8);
+ADIDigitalIn limit_index(8);
 
 Imu imu(12);
 

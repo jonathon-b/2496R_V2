@@ -8,6 +8,7 @@
 //vector anything else has 2 components(x,y)
 
 class PurePursuit {
+  public:
   double curvature = 1;
   double lk_radius = 0;
   std::vector<double> lk = {0,0}; //x,y
@@ -80,7 +81,7 @@ class PurePursuit {
         }
   }
 
-  void find_curvature(double heading,std::vector<double> robot) {//calculating curvature
+  void find_curvature(std::vector<double> robot) {//calculating curvature
       double a,b,c; //ax +by +c = 0 standard form
       std::vector<double> delta; //delta(difference vector component from lk and robot)
 
@@ -88,14 +89,14 @@ class PurePursuit {
       delta[Y] = lk[Y] - robot[Y];
 
       double d;
-      a = -tan(heading);
+      a = -tan(robot[THETA]);
       b = 1;
-      c = tan(heading) * robot[X] - robot[Y];
+      c = tan(robot[THETA]) * robot[X] - robot[Y];
 
       d = std::abs(a * lk[X] + b * lk[Y] + c);
       d = d / sqrt(a * a + b* b);
       curvature = 2 * d / pow(delta[X] * delta[X] + delta[Y] * delta[Y], 2); // 2 * x / L / L = curvature
-      curvature *= find_side(heading, robot); //make sure curvature is on the correct side
+      curvature *= find_side(robot[THETA], robot); //make sure curvature is on the correct side
     }
 
 

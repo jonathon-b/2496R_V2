@@ -2,6 +2,8 @@
 #define SPLINE_H
 #include "../custom/config.hpp"
 
+typedef std::vector<std::vector<double>> Path;
+
 
 class Spline{
   private:
@@ -10,7 +12,7 @@ class Spline{
   public:
     double ax,bx,cx,dx;
     double ay,by,cy,dy;
-    std::vector<std::vector<double>> path;
+    Path path;
 
     Spline(std::vector<double> start_, std::vector<double> end_, double t_interval) {
       start = start_;
@@ -76,9 +78,9 @@ class Spline{
       return w * (speed(t0) + speed(t1));
     }
 
-    std::vector<std::vector<double>> point_generation(double t_interval) {
+    Path point_generation(double t_interval) {
       //make sure 1 and t_interval divides nicely into an integer pwease
-      std::vector<std::vector<double>> list;
+      Path list;
       std::vector<double> temp = {0,0,0,0};
       for(int t = 0; t <= 1; t+=t_interval) {
         temp[X] = position(t)[X];

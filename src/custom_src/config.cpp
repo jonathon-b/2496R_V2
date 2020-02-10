@@ -36,7 +36,6 @@ int index_heights = 0;
 double lift_value = 0;
 void pid_lift() {
 
-
   if(control.get_digital_new_press(E_CONTROLLER_DIGITAL_R1)) {
     index_heights++;
     index_heights = fmin(index_heights , sizeof(preset_heights) / sizeof(*preset_heights) - 1 );

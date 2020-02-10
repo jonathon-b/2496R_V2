@@ -85,14 +85,11 @@ class Spline{
       //make sure 1 and t_interval divides nicely into an integer pwease
       Path list;
       std::vector<double> temp = {0,0,0,0};
-      for(double t = 0; t < 1; t+=t_interval) {
+      for(double t = 0; t <= 1; t+=t_interval) {
         temp[X] = position(t)[X];
         temp[Y] = position(t)[Y];
         list.push_back(temp);
       }
-      temp[X] = position(1)[X];
-      temp[Y] = position(1)[Y];
-      list.push_back(temp);
       return list;
     }
 };

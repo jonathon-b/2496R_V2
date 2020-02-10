@@ -2,6 +2,9 @@
 #include "custom/lib_drive.hpp"
 #include "custom/lib_auton.hpp"
 void initialize() {
+	mtr_rollR.set_brake_mode(E_MOTOR_BRAKE_HOLD);
+	mtr_rollL.set_brake_mode(E_MOTOR_BRAKE_HOLD);
+	mtr_lift.set_brake_mode(E_MOTOR_BRAKE_HOLD);
 	enc_l.reset();
 	enc_r.reset();
 	delay(500);
@@ -15,6 +18,13 @@ void disabled() {
 
 void competition_initialize() {
 	while(imu.is_calibrating()) {}
+}
+
+void auton_lift() {
+	while(true) {
+		pid_lift();
+		delay(DT);
+	}
 }
 
 void autonomous() {
@@ -159,19 +169,29 @@ void autonomous() {
 	//pure_pursuiter(a.path, 200, 100, 90);
 
 	//Spline b({0,0,90 * DEG_TO_RAD}, {1000, 2000, -90 * DEG_TO_RAD}, 0.05, 2)
-	Spline b({0,0,90 * DEG_TO_RAD}, {2000,2000,0 * DEG_TO_RAD}, 0.1, 2);
+	//Spline b({0,0,90 * DEG_TO_RAD}, {2000,2000,45 * DEG_TO_RAD}, 0.1, 2.5);
 	//pure_pursuiter(b.path, 400, 120 ,90);
-	pure_pursuiter(b.path, 750, 300, 230, 90, 180, 0);
+	//pure_pursuiter(b.path, 750, 500, 200, 90 , 90, 200, 100, true);
 	//std::vector<std::vector<double>> path = {{0,0}, {0,300}, {-100,500}, {-200,800}};
+	pwr_intake(127);
+	/*
+	pwr_lift(127);
+	delay(230);
+	pwr_lift(0);
+	pwr_lift(-100);
+	delay(220);
+	pwr_lift(0);
+	*/
 
+	forward(1600, 800, 900, false);
+	Spline path1({0,0,90 * DEG_TO_RAD}, {1000, 1100, 90 * DEG_TO_RAD}, 0.07, 0.6);
+	pure_pursuiter(path1.path, 500, 900, 200, 90, 90, 200, 200, true);
 
 }
 
 bool lift_auto = false;
 void opcontrol() {
-	mtr_rollR.set_brake_mode(E_MOTOR_BRAKE_HOLD);
-	mtr_rollL.set_brake_mode(E_MOTOR_BRAKE_HOLD);
-	mtr_lift.set_brake_mode(E_MOTOR_BRAKE_HOLD);
+
 
 	while (true) {
 

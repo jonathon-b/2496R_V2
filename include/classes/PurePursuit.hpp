@@ -99,11 +99,13 @@ class PurePursuit {
 
       curvature = 2 * d / (delta[X] * delta[X] + delta[Y] * delta[Y]); // 2 * x / L / L = curvature
       curvature *= find_side(robot[THETA] * DEG_TO_RAD, robot); //make sure curvature is on the correct side
+      /*
       printf("robot[X]: %.2f    robot[Y]: %.2f    robot[THETA]: %.2f\n", robot[X], robot[Y], robot[THETA]);
       printf("lk[x]: %.2f   lk[y]: %.2f\n", lk[X], lk[Y]);
       printf("a: %.2f   b: %.2f   c: %.2f   d: %.2f\n", a, b, c, d);
       printf("deltax: %.2f    deltay: %.2f\n", delta[X], delta[Y]);
       printf("curvature: %.5f\n\n", curvature);
+      */
     }
 
 

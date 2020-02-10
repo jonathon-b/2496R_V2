@@ -29,9 +29,9 @@ extern void arc_turns(double target_angle, double radius, double cruise_v, doubl
 
 extern void pwr_intake(int pwr);
 
-extern void path_follow(Path path, double v_max, double a_max, double lookahead_radius, double theta);
+extern void pwr_lift(int pwr);
 
-extern void pure_pursuiter(Path path, double v, double a, double lookahead, double theta, double max_change, double theta_end);
+extern void pure_pursuiter(Path path, double v, double a, double lookahead, double theta , double theta_end, double max_change, double extra_dist, bool reverse);
 
 extern void blue_auton();
 

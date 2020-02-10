@@ -23,7 +23,8 @@ class Odometry {
 
     void calculate_state() {
       prev_theta = state[THETA];
-      state[THETA] = 0.8 * (-imu.get_yaw() - imu_offset) + 0.2 *  (enc_l.get_value() - enc_r.get_value())/WHEELBASE * RAD_TO_DEG/2 + init_angle; //average enc and gyro
+      //state[THETA] = 0.8 * (-imu.get_yaw() - imu_offset) + 0.2 *  (enc_l.get_value() - enc_r.get_value())/WHEELBASE * RAD_TO_DEG/2 + init_angle; //average enc and gyro
+      state[THETA] = (-imu.get_yaw() - imu_offset) + init_angle;
       //may need weighted average
 
       prev_enc_avg = enc_avg;

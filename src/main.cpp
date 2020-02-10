@@ -145,12 +145,23 @@ void autonomous() {
 
 	//path_follow(path.path, 300, 450, 100, 90);
 
+	/*
+	Odometry odo(0,0,90);
+	while(true) {
+		odo.calculate_state();
+		printf("X: %.2f		y: %.2f		theta: %.2f\n\n", odo.state[X], odo.state[Y], odo.state[THETA]);
+		delay(15);
+	}
+	*/
+
 	//apparently this one works
 	//Spline a({0,0,90 * DEG_TO_RAD}, {-556,2462, 90 * DEG_TO_RAD}, 0.2, 6);
 	//pure_pursuiter(a.path, 200, 100, 90);
 
-	Spline b({0,0,90 * DEG_TO_RAD}, {1000, 2000, -90 * DEG_TO_RAD}, 0.05, 2);
-	pure_pursuiter(b.path, 400, 120 ,90);
+	//Spline b({0,0,90 * DEG_TO_RAD}, {1000, 2000, -90 * DEG_TO_RAD}, 0.05, 2)
+	Spline b({0,0,90 * DEG_TO_RAD}, {2000,2000,0 * DEG_TO_RAD}, 0.1, 2);
+	//pure_pursuiter(b.path, 400, 120 ,90);
+	pure_pursuiter(b.path, 750, 300, 230, 90, 180, 0);
 	//std::vector<std::vector<double>> path = {{0,0}, {0,300}, {-100,500}, {-200,800}};
 
 

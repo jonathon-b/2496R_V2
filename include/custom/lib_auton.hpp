@@ -1,5 +1,7 @@
 #include "../classes/PID.hpp"
 #include "../classes/Odometry.hpp"
+#include "../classes/Motion_Profile.hpp"
+#include "../classes/Spline.hpp"
 #include "config.hpp"
 #ifndef LIB_AUTON_H
 #define LIB_AUTON_H
@@ -26,6 +28,10 @@ extern void turn(double target, double cruise_v, double accel, bool reverse);
 extern void arc_turns(double target_angle, double radius, double cruise_v, double accel, bool reverse);
 
 extern void pwr_intake(int pwr);
+
+extern void path_follow(Path path, double v_max, double a_max, double lookahead_radius, double theta);
+
+extern void pure_pursuiter(Path path, double v, double lookahead, double theta);
 
 extern void blue_auton();
 

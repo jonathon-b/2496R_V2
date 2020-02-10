@@ -61,7 +61,8 @@ void autonomous() {
 
 	//piv test/tune
 
-	forward(2000,500,750, false);
+	//forward(2000,500,750, false);
+	//arc_turns(90, 1000, 500, 750, false);
 
 
 	/*
@@ -103,14 +104,60 @@ void autonomous() {
 	}
 	*/
 
+	/*
+	Motion_Profile prof(500,750);
+	std::vector<double> start = {0,0,90 * DEG_TO_RAD};
+	std::vector<double> end = {100,100,45 * DEG_TO_RAD};
+	Spline a(start,end,0.1);
+	printf("ax: %.5f		bx: %.5f		cx: %.5f		dx: %.5f\n", a.ax, a.bx, a.cx, a.dx);
+	printf("ay: %.5f		by: %.5f		cy: %.5f		dy: %.5f\n", a.ay, a.by, a.cy, a.dy);
+	for(int i = 0; i < a.path.size(); i++) {
+		printf("index: %d		x: %.2f		y: %.2f\n", i, a.path[i][X], a.path[i][Y]);
+	}
+	*/
+
+	//injection
+	/*
+	Motion_Profile prof(1000, 2000);
+	std::vector<double> start = {0,0,90 * DEG_TO_RAD};
+	std::vector<double> end = {1000,1000,0 * DEG_TO_RAD};
+	Spline a(start,end,0.01, 2);
+	a.path = prof.inject_trapezoid(a.path);
+	printf("ax: %.5f		bx: %.5f		cx: %.5f		dx: %.5f\n", a.ax, a.bx, a.cx, a.dx);
+	printf("ay: %.5f		by: %.5f		cy: %.5f		dy: %.5f\n", a.ay, a.by, a.cy, a.dy);
+	for(int i = 0; i < a.path.size(); i++) {
+		printf("index: %d		x: %.2f		y: %.2f		v: %.2f			a: %.2f\n", i, a.path[i][X], a.path[i][Y], a.path[i][V], a.path[i][A]);
+	}
+	*/
+
+	/*
+	Odometry odo(0,0,90);
+	while(true) {
+		odo.calculate_state();
+		printf("x: %.2f		y: %.2f		theta: %.2f\n", odo.state[X], odo.state[Y], odo.state[THETA]);
+		delay(15);
+	}
+	*/
+
+
+	//std::vector<double> start = {0,0,90 * DEG_TO_RAD};
+	//std::vector<double> end = {942, 1807, 90 * DEG_TO_RAD};
+
+	//path_follow(path.path, 300, 450, 100, 90);
+
+	//apparently this one works
+	//Spline a({0,0,90 * DEG_TO_RAD}, {-556,2462, 90 * DEG_TO_RAD}, 0.2, 6);
+	//pure_pursuiter(a.path, 200, 100, 90);
+
+	Spline b({0,0,90 * DEG_TO_RAD}, {1000, 2000, -90 * DEG_TO_RAD}, 0.05, 2);
+	pure_pursuiter(b.path, 400, 120 ,90);
+	//std::vector<std::vector<double>> path = {{0,0}, {0,300}, {-100,500}, {-200,800}};
+
+
 }
 
 bool lift_auto = false;
 void opcontrol() {
-
-
-
-
 	mtr_rollR.set_brake_mode(E_MOTOR_BRAKE_HOLD);
 	mtr_rollL.set_brake_mode(E_MOTOR_BRAKE_HOLD);
 	mtr_lift.set_brake_mode(E_MOTOR_BRAKE_HOLD);

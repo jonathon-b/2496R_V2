@@ -56,7 +56,8 @@ class PurePursuit {
         temp[Y] += t2 * d[Y];
       }
 
-      lk = temp;
+      lk[X] = temp[X];
+      lk[Y] = temp[Y];
       return true;
     }
     else {
@@ -67,11 +68,11 @@ class PurePursuit {
   int find_side(double heading, std::vector<double> robot) { //need to have lk defined already ... also return 1 or -1 for direction
         //this function returns the side in which the point is relative to robot
         double temp;
-        std::vector<double> B = {0,0};
-        B[X] = robot[X] + cos(heading);
-        B[Y] = robot[Y] + sin(heading);
+        std::vector<double> c = {0,0};
+        c[X] = robot[X] + cos(heading);
+        c[Y] = robot[Y] + sin(heading);
 
-        temp = (B[Y] - robot[Y]) * (lk[X] - robot[X]) - (B[X] -robot[X]) * (lk[Y] - robot[Y]); //crossproduct of B and lk with robot as reference point
+        temp = (c[Y] - robot[Y]) * (lk[X] - robot[X]) - (c[X] -robot[X]) * (lk[Y] - robot[Y]); //crossproduct of B and lk with robot as reference point
 
         if(temp > 0) {
           return 1; //positive direction (right) ->
@@ -83,20 +84,26 @@ class PurePursuit {
 
   void find_curvature(std::vector<double> robot) {//calculating curvature
       double a,b,c; //ax +by +c = 0 standard form
-      std::vector<double> delta; //delta(difference vector component from lk and robot)
+      std::vector<double> delta = {0,0}; //delta(difference vector component from lk and robot)
 
       delta[X] = lk[X] - robot[X];
       delta[Y] = lk[Y] - robot[Y];
 
       double d;
-      a = -tan(robot[THETA]);
+      a = -tan(robot[THETA] * DEG_TO_RAD);
       b = 1;
-      c = tan(robot[THETA]) * robot[X] - robot[Y];
+      c = tan(robot[THETA] * DEG_TO_RAD) * robot[X] - robot[Y];
 
       d = std::abs(a * lk[X] + b * lk[Y] + c);
       d = d / sqrt(a * a + b* b);
-      curvature = 2 * d / pow(delta[X] * delta[X] + delta[Y] * delta[Y], 2); // 2 * x / L / L = curvature
-      curvature *= find_side(robot[THETA], robot); //make sure curvature is on the correct side
+
+      curvature = 2 * d / (delta[X] * delta[X] + delta[Y] * delta[Y]); // 2 * x / L / L = curvature
+      curvature *= find_side(robot[THETA] * DEG_TO_RAD, robot); //make sure curvature is on the correct side
+      printf("robot[X]: %.2f    robot[Y]: %.2f    robot[THETA]: %.2f\n", robot[X], robot[Y], robot[THETA]);
+      printf("lk[x]: %.2f   lk[y]: %.2f\n", lk[X], lk[Y]);
+      printf("a: %.2f   b: %.2f   c: %.2f   d: %.2f\n", a, b, c, d);
+      printf("deltax: %.2f    deltay: %.2f\n", delta[X], delta[Y]);
+      printf("curvature: %.5f\n\n", curvature);
     }
 
 

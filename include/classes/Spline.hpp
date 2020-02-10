@@ -14,11 +14,14 @@ class Spline{
     double ay,by,cy,dy;
     Path path;
 
-    Spline(std::vector<double> start_, std::vector<double> end_, double t_interval) {
+    double multiplier = 1;
+
+    Spline(std::vector<double> start_, std::vector<double> end_, double t_interval, double modifier) {
       start = start_;
       end = end_;
       calculate_constants();
       path = point_generation(t_interval);
+      multiplier = modifier;
     }
 
     void calculate_constants() {
@@ -29,11 +32,11 @@ class Spline{
       double mag_vector = sqrt( pow(end[X]-start[X],2) + pow(end[Y]-start[Y],2) );
 
       //calculating "slopes" characteristics
-      slope_xi = cos(start[THETA]*DEG_TO_RAD) * mag_vector;
-      slope_xi = sin(start[THETA]*DEG_TO_RAD) * mag_vector;
+      slope_xi = cos(start[THETA]) * mag_vector * multiplier;
+      slope_yi = sin(start[THETA]) * mag_vector * multiplier;
 
-      slope_xf = cos(end[THETA]*DEG_TO_RAD) * mag_vector;
-      slope_yf = sin(end[THETA]*DEG_TO_RAD) * mag_vector;
+      slope_xf = cos(end[THETA]) * mag_vector * multiplier;
+      slope_yf = sin(end[THETA]) * mag_vector * multiplier;
 
       //calculating CONSTANTS (math in documentation)
       ax = 2 * start[X] - 2 * end[X] + slope_xf + slope_xi;
@@ -44,7 +47,7 @@ class Spline{
       ay = 2 * start[Y] - 2 * end[Y] + slope_yf + slope_yi;
       by = -2 * slope_yi - slope_yf - 3 * start[Y] + 3 * end[Y];
       cy = slope_yi;
-      dy = end[Y];
+      dy = start[Y];
     }
 
     std::vector<double> position(double t) {
@@ -82,9 +85,9 @@ class Spline{
       //make sure 1 and t_interval divides nicely into an integer pwease
       Path list;
       std::vector<double> temp = {0,0,0,0};
-      for(int t = 0; t <= 1; t+=t_interval) {
-        temp[X] = position(t)[X];
-        temp[Y] = position(t)[Y];
+      for(int t = 0; t <= 1/t_interval; t++) {
+        temp[X] = position(t*t_interval)[X];
+        temp[Y] = position(t*t_interval)[Y];
         list.push_back(temp);
       }
       return list;

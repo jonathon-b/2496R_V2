@@ -11,17 +11,19 @@ class Odometry {
     double enc_avg = 0;
     double prev_enc_avg = 0;
     double imu_offset = 0;
+    double init_angle = 0;
     Odometry(double x_, double y_, double theta_) {
       //initialise worlds
       state[X] = x_;
       state[Y] = y_;
       state[THETA] = theta_;
-      imu_offset = imu.get_yaw();
+      imu_offset = -imu.get_yaw();
+      init_angle = theta_;
     }
 
     void calculate_state() {
       prev_theta = state[THETA];
-      state[THETA]= (imu.get_yaw() - imu_offset + (enc_l.get_value() - enc_r.get_value())/WHEELBASE * RAD_TO_DEG)/2; //average enc and gyro
+      state[THETA] = 0.8 * (-imu.get_yaw() - imu_offset) + 0.2 *  (enc_l.get_value() - enc_r.get_value())/WHEELBASE * RAD_TO_DEG/2 + init_angle; //average enc and gyro
       //may need weighted average
 
       prev_enc_avg = enc_avg;
@@ -32,6 +34,7 @@ class Odometry {
       state[X] += (enc_avg-prev_enc_avg) * cos((prev_theta  + d_theta/2) * DEG_TO_RAD);
       state[Y] += (enc_avg-prev_enc_avg) * sin((prev_theta + d_theta/2) * DEG_TO_RAD);
     }//state is x y and theta
+
 
 };
 

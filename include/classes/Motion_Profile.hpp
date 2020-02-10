@@ -39,7 +39,6 @@ class Motion_Profile{
         else {
            current_a = -max_accel;
         }
-        current_a = -max_accel;
       }
     }
 
@@ -53,12 +52,6 @@ class Motion_Profile{
         current_v = std::fmax(current_v, traj[V]);
       }
     }
-    void update_2d(double &p_l, double &p_r, double v_l, double v_r, double a) {
-      double dt = DT * MS_TO_S;
-      p_l = v_l * dt + 0.5 * a * dt * dt;
-      p_r = v_r * dt + 0.5 * a * dt * dt;
-    }
-
 
     double calculate_path_curvature(std::vector<double> p1, std::vector<double> p2, std::vector<double> p3) {
       //does big math to find a circle fitting those three points then calculates curvature given radius
@@ -75,7 +68,8 @@ class Motion_Profile{
     }
 
     //will have to change for s-curve
-    std::vector<std::vector<double>> inject_trapezoid(std::vector<std::vector<double>> path) {
+    std::vector<std::vector<double>> inject_trapezoid(std::vector<std::vector<double>> path_) {
+      std::vector<std::vector<double>> path = path_;
       double curvature = 0;
       double delta_x = 0;
       for(int i = 0; i < path.size(); i++) { //calculating forward acceleration
@@ -90,11 +84,12 @@ class Motion_Profile{
         else {
           curvature = calculate_path_curvature(path[i-1], path[i], path[i+1]);
           delta_x = hypot(path[i-1][X] - path[i][X], path[i-1][Y] - path[i][Y]);
-          path[i][V] = std::fmin(1.5/curvature, sqrt(path[i-1][V] * path[i-1][V] + 2 * max_accel * delta_x) );
+          path[i][V] = std::fmin(1/curvature, sqrt(path[i-1][V] * path[i-1][V] + 2 * max_accel * delta_x) );
+          path[i][V] = std::fmin(path[i][V], max_velo);
         }
       }
 
-      for(int i = path.size()-1; i >= 0; i++) {//calculating backward acceleration
+      for(int i = path.size()-1; i >= 0; i--) {//calculating backward acceleration
         if(i != 0 && i != path.size()-1) {
           delta_x = hypot(path[i+1][X] - path[i][X], path[i+1][Y] - path[i][Y]);
           path[i][V] = std::fmin(path[i][V], sqrt(path[i+1][V] * path[i+1][V] + 2 * max_accel * delta_x) );

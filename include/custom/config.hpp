@@ -39,7 +39,7 @@ extern ADIDigitalIn limit_index;
 #define DEG_TO_RAD PI/180
 #define RAD_TO_DEG 180/PI
 
-#define WHEELBASE 230.348289
+#define WHEELBASE 225.348289
 //208.348289
 
 #define GRAVFF 0
@@ -53,6 +53,9 @@ extern ADIDigitalIn limit_index;
 #define LIFTH_BOTTOM 0
 #define LIFTH_SMALLTOWER -885
 #define LIFTH_BIGTOWER -1185
+
+#define ENC_TO_IN 2.75*PI/360
+#define IN_TO_ENC 360/2.75/PI
 
 #define DT 15
 #define MS_TO_S 1/1000

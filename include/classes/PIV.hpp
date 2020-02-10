@@ -16,15 +16,13 @@ class PIV {
 
     double error_velo = 0;
 
-    double filter_velo = 0;
-
     PIV(double P, double I, double V) {
       kp = P;
       ki = I;
       kv = V;
     }
 
-    double Calculate(double target, double target_velo, double input, double limit, double max) {
+    double Calculate(double target, double target_velo, double input, double input_velo, double limit, double max) {
       prev_error = error;
       error = target - input;
 
@@ -32,7 +30,7 @@ class PIV {
 
       integral >= 0? integral = fmin(integral, max): integral = fmax(integral, -max);
 
-      error_velo = target_velo - filter_velo;
+      error_velo = target_velo - input_velo;
 
       return kp*error + ki *integral + kv*error_velo;
     }

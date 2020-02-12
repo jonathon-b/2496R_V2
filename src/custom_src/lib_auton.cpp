@@ -182,6 +182,7 @@ int closest_index(Path path, std::vector<double> robot, int start) {
   return index;
 }
 
+
 Path combine_path(Path path1, Path path2) {
   Path comb;
   comb.reserve(path1.size() + path2.size());
@@ -203,7 +204,6 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
   Motion_Profile prof(v,a);
   PurePursuit pursuit(lookahead);
   Odometry odo(0,0,theta);
-
   PIV chas_l(KP_FWD, KI_FWD, KV_FWD);
   PIV chas_r(KP_FWD, KI_FWD, KV_FWD);
 
@@ -220,51 +220,48 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
 
   double vl = 0, vr = 0;
 
+  double sign = 1;
+  if(reverse) sign = -1;
+
   enc_l.reset();
   enc_r.reset();
   double conv = theta_end * DEG_TO_RAD;
   path.push_back({path[path.size()-1][X] + cos(conv) * extra_dist, path[path.size()-1][Y] + sin(conv) * extra_dist, 0, -a});
   path = prof.inject_trapezoid(path);
-
+  path.push_back({path[path.size()-1][X] + cos(conv) * extra_dist, path[path.size()-1][Y] + sin(conv) * extra_dist, 0, -a});
   for(int i = 0; i < path.size(); i++) {
     printf("path[X]: %.2f     path[Y]: %.2f   path[V]: %.2f    path[A]: %.2f\n", path[i][X], path[i][Y], path[i][V], path[i][A]);
   }
   while(true) {
     //getting position and velocity
+    if(reverse) {
+      vr = -mtr_chasFL.get_actual_velocity() * RPM_TO_ENCPS;
+      vl = -mtr_chasFR.get_actual_velocity() * RPM_TO_ENCPS;
+    }
+    else {
       vl = mtr_chasFL.get_actual_velocity() * RPM_TO_ENCPS;
       vr = mtr_chasFR.get_actual_velocity() * RPM_TO_ENCPS;
-
+    }
 
     odo.calculate_state();
 
-    index_start = closest_index(path, odo.state, index_start);
+    index_start = closest_index(path, {sign * odo.state[X], sign * odo.state[Y], odo.state[THETA]}, index_start);
     index_end = index_start + 1;
 
     if(index_start != path.size()-1-1) {
-      if(!pursuit.update_lk(path[index_start], path[index_end], odo.state )) {
+      if(!pursuit.update_lk(path[index_start], path[index_end], {sign * odo.state[X], sign * odo.state[Y], odo.state[THETA]} )) {
         index_start -=1;
         index_end -=1;
       }
 
-      pursuit.update_lk(path[index_start], path[index_end], odo.state );
+      pursuit.update_lk(path[index_start], path[index_end], { sign * odo.state[X], sign * odo.state[Y], odo.state[THETA]} );
     }
     else {
       pursuit.lk[X] = path[path.size()-1][X];
       pursuit.lk[Y] = path[path.size()-1][Y];
      }
 
-    pursuit.find_curvature(odo.state);
-
-    /*
-    if(a_target < path[index_end][A]) {
-      a_target += 10;
-      a_target = fmin(a_target, path[index_end][A]);
-    }
-    else if (a_target > path[index_end][A]) {
-      a_target -= 10;
-      a_target = fmax(a_target, path[index_end][A]);
-    }
-    */
+    pursuit.find_curvature( { sign * odo.state[X], sign * odo.state[Y], odo.state[THETA]} );
 
     a_target = path[index_end][A];
     v_target += a_target * DT * MS_TO_S;
@@ -273,26 +270,47 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
     else v_target = path[index_end][V];
 
 
-
     proj_vl = v_target * (2 + pursuit.curvature * WHEELBASE) / 2;
     proj_vr = v_target * (2 - pursuit.curvature * WHEELBASE) / 2;
 
-    proj_pl = enc_l.get_value() + proj_vl * DT * MS_TO_S + 0.5 * a_target * DT * DT * MS_TO_S * MS_TO_S;
-    proj_pr = enc_r.get_value() + proj_vr * DT * MS_TO_S + 0.5 * a_target * DT * DT * MS_TO_S * MS_TO_S;
+    if(reverse) {
+      proj_pl = -enc_r.get_value() + proj_vl * DT * MS_TO_S + 0.5 * a_target * DT * DT * MS_TO_S * MS_TO_S;
+      proj_pr = -enc_l.get_value() + proj_vr * DT * MS_TO_S + 0.5 * a_target * DT * DT * MS_TO_S * MS_TO_S;
+    }
+    else {
+      proj_pl = enc_l.get_value() + proj_vl * DT * MS_TO_S + 0.5 * a_target * DT * DT * MS_TO_S * MS_TO_S;
+      proj_pr = enc_r.get_value() + proj_vr * DT * MS_TO_S + 0.5 * a_target * DT * DT * MS_TO_S * MS_TO_S;
+    }
 
 
     prev_pwm_l = pwm_l;
     prev_pwm_r = pwm_r;
 
-    pwm_l = chas_l.Calculate(proj_pl, proj_vl, enc_l.get_value(), vl, LIMIT_FWD, MAX_FWD);
-    if(proj_vl > 0) pwm_l += feedforward(proj_vl, KVFF_FWD, KVFF_INT_FWD);
-    else if(proj_vl < 0) pwm_l += feedforward(proj_vl, KVFF_FWD, -KVFF_INT_FWD);
-    pwm_l += feedforward(a_target, KAFF_FWD, 0);
+    if(reverse) {
 
-    pwm_r = chas_r.Calculate(proj_pr, proj_vr, enc_r.get_value(), vr, LIMIT_FWD, MAX_FWD);
-    if(proj_vr > 0) pwm_r += feedforward(proj_vr, KVFF_FWD, KVFF_INT_FWD);
-    else if(proj_vr < 0) pwm_r += feedforward(proj_vr, KVFF_FWD, -KVFF_INT_FWD);
-    pwm_r += feedforward(a_target, KAFF_FWD, 0);
+      pwm_l = chas_l.Calculate(proj_pl, proj_vl, -enc_r.get_value(), vl, LIMIT_FWD, MAX_FWD);
+      if(proj_vl > 0) pwm_l += feedforward(proj_vl, KVFF_FWD, KVFF_INT_FWD);
+      else if(proj_vl < 0) pwm_l += feedforward(proj_vl, KVFF_FWD, -KVFF_INT_FWD);
+      pwm_l += feedforward(a_target, KAFF_FWD, 0);
+
+      pwm_r = chas_r.Calculate(proj_pr, proj_vr, -enc_l.get_value(), vr, LIMIT_FWD, MAX_FWD);
+      if(proj_vr > 0) pwm_r += feedforward(proj_vr, KVFF_FWD, KVFF_INT_FWD);
+      else if(proj_vr < 0) pwm_r += feedforward(proj_vr, KVFF_FWD, -KVFF_INT_FWD);
+      pwm_r += feedforward(a_target, KAFF_FWD, 0);
+
+    }
+    else {
+      pwm_l = chas_l.Calculate(proj_pl, proj_vl, enc_l.get_value(), vl, LIMIT_FWD, MAX_FWD);
+      if(proj_vl > 0) pwm_l += feedforward(proj_vl, KVFF_FWD, KVFF_INT_FWD);
+      else if(proj_vl < 0) pwm_l += feedforward(proj_vl, KVFF_FWD, -KVFF_INT_FWD);
+      pwm_l += feedforward(a_target, KAFF_FWD, 0);
+
+      pwm_r = chas_r.Calculate(proj_pr, proj_vr, enc_r.get_value(), vr, LIMIT_FWD, MAX_FWD);
+      if(proj_vr > 0) pwm_r += feedforward(proj_vr, KVFF_FWD, KVFF_INT_FWD);
+      else if(proj_vr < 0) pwm_r += feedforward(proj_vr, KVFF_FWD, -KVFF_INT_FWD);
+      pwm_r += feedforward(a_target, KAFF_FWD, 0);
+    }
+
 
 
     if( std::abs(pwm_l - prev_pwm_l) > max_change && (index_start == 0 || index_end > path.size()-1-1)) {
@@ -304,12 +322,26 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
 
     if(v_target == 0) break;
 
-    volt_chas(pwm_l, pwm_r);
+    if(reverse) {
+      volt_chas(-pwm_r, -pwm_l);
+    }
+    else {
+      volt_chas(pwm_l, pwm_r);
+    }
 
     //if(pursuit.lk[X] == path[path.size()-4][X] && pursuit.lk[Y] == path[path.size()-4][Y] && hypot(pursuit.lk[X] - odo.state[X], pursuit.lk[Y]-odo.state[Y]) < 20) break;
 
     printf("odo[X]: %.2f    odo[Y]: %.2f    odo[THETA]: %.2f\n\n", odo.state[X], odo.state[Y], odo.state[THETA]);
 
+    delay(DT);
+  }
+  PID turn(KP_TURN,KI_TURN,KD_TURN);
+  double turn_power = 0;
+  while(true) {
+    odo.calculate_state();
+    turn_power = turn.Calculate(theta_end, odo.state[THETA], LIMIT_TURN, MAX_TURN);
+    if(std::abs(turn.error) < .5) break;
+    volt_chas(-turn_power,turn_power);
     delay(DT);
   }
   volt_chas(0,0);

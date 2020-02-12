@@ -183,9 +183,19 @@ void autonomous() {
 	pwr_lift(0);
 	*/
 
-	forward(1600, 800, 900, false);
-	Spline path1({0,0,90 * DEG_TO_RAD}, {1000, 1100, 90 * DEG_TO_RAD}, 0.07, 0.6);
-	pure_pursuiter(path1.path, 500, 900, 200, 90, 90, 200, 200, true);
+	//forward(1600, 800, 900, false);
+	Spline path1({0,0,90 * DEG_TO_RAD}, {900, 1420, 90 * DEG_TO_RAD}, 0.25, 0.1);
+	/*Path path;
+	path.push_back({0,0,0,0});
+	path.push_back({100,400,0,0});
+	path.push_back({300,600,0,0});
+	path.push_back({500,800,0,0});
+	path.push_back({700,800,0,0});
+	path.push_back({800,1000,0,0});
+	path.push_back({1000,1300,0,0});
+	path.push_back({1300,1600,0,0});*/
+	pure_pursuiter(path1.path, 900, 900, 300, 90, 90, 400, 700, true);
+	forward(1600,800,900,false);
 
 }
 

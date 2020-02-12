@@ -39,7 +39,7 @@ extern ADIDigitalIn limit_index;
 #define DEG_TO_RAD PI/180
 #define RAD_TO_DEG 180/PI
 
-#define WHEELBASE 225.348289
+#define WHEELBASE 220.348289
 //208.348289
 
 #define GRAVFF 0

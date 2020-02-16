@@ -13,11 +13,10 @@ void initialize() {
 
 //test comment 123
 void disabled() {
-
+	while(imu.is_calibrating()) {}
 }
 
 void competition_initialize() {
-	while(imu.is_calibrating()) {}
 }
 
 void auton_lift() {
@@ -28,7 +27,21 @@ void auton_lift() {
 }
 
 void autonomous() {
-	while(imu.is_calibrating()) {}
+	pwr_intake(127);
+	forward(1300,1100,1200,false);
+	Spline path1({0,0,90*DEG_TO_RAD}, {1020, 1050, 45 * DEG_TO_RAD}, 0.25, 0.015);
+	pure_pursuiter(path1.path, 1200, 900, 300 ,90 , 90, 400, 400, true);
+	forward(1880,550,1000,false);
+	delay(600);
+	pwr_intake(0);
+	forward(1500,1700,1800,true);
+	turn(123, 150, 200, true);
+	volt_chas(4000,4000);
+	delay(1500);
+	volt_chas(0,0);
+	stack();
+
+	volt_chas(0,0);
 	//blue_auton();
 	/*
 	pwr_intake(0);
@@ -173,7 +186,7 @@ void autonomous() {
 	//pure_pursuiter(b.path, 400, 120 ,90);
 	//pure_pursuiter(b.path, 750, 500, 200, 90 , 90, 200, 100, true);
 	//std::vector<std::vector<double>> path = {{0,0}, {0,300}, {-100,500}, {-200,800}};
-	pwr_intake(127);
+	//pwr_intake(127);
 	/*
 	pwr_lift(127);
 	delay(230);
@@ -184,7 +197,7 @@ void autonomous() {
 	*/
 
 	//forward(1600, 800, 900, false);
-	Spline path1({0,0,90 * DEG_TO_RAD}, {900, 1420, 90 * DEG_TO_RAD}, 0.25, 0.1);
+	//Spline path1({0,0,90 * DEG_TO_RAD}, {900, 1420, 90 * DEG_TO_RAD}, 0.25, 0.1);
 	/*Path path;
 	path.push_back({0,0,0,0});
 	path.push_back({100,400,0,0});
@@ -194,8 +207,11 @@ void autonomous() {
 	path.push_back({800,1000,0,0});
 	path.push_back({1000,1300,0,0});
 	path.push_back({1300,1600,0,0});*/
-	pure_pursuiter(path1.path, 900, 900, 300, 90, 90, 400, 700, true);
-	forward(1600,800,900,false);
+	//pure_pursuiter(path1.path, 900, 900, 300, 90, 90, 400, 700, true);
+	//forward(1600,1000,1200,true);
+	//purepursuiter(path1.path, 900 ,900, 300, 90 ,90 , 400 ,700, true);
+	//turn(90,100,200,true);
+
 
 }
 
@@ -205,7 +221,7 @@ void opcontrol() {
 
 	while (true) {
 
-		drive_chassis();
+	drive_chassis();
 
 		if(control.get_digital_new_press(E_CONTROLLER_DIGITAL_X)) lift_auto = !lift_auto;
 		lift_auto? pid_lift() : drive_lift();
@@ -214,4 +230,8 @@ void opcontrol() {
 
 		delay(10);
 	}
+
+
+
+
 }

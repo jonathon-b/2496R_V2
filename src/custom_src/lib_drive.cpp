@@ -138,8 +138,8 @@ void drive_tray() {
     else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(TILT_PWR - 100);
     else mtr_tilt.move(TILT_PWR - 110);
 
-    mtr_rollR.move(-4);
-    mtr_rollL.move(-4);
+    //mtr_rollR.move(-4);
+    //mtr_rollL.move(-4);
 
   }
   else if(control.get_digital(E_CONTROLLER_DIGITAL_DOWN)){

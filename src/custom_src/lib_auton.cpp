@@ -19,11 +19,11 @@
 #define KAFF_TURN 5.5
 #define KVFF_INT_TURN 1459.96
 
-#define KP_TURN 200
-#define KI_TURN 0.8
+#define KP_TURN 250
+#define KI_TURN 25
 #define KD_TURN 0
-#define LIMIT_TURN 20
-#define MAX_TURN 2000.0
+#define LIMIT_TURN 10
+#define MAX_TURN 1500.0
 
 #define RPM_TO_ENCPS 8.72727273 * 2
 
@@ -52,7 +52,7 @@ void forward(double target, double cruise_v, double accel, bool reverse) {
 
   double imu_offset = imu.get_yaw();
   double angle = 0;
-  double angle_volt;
+  double angle_volt = 0;
 
   enc_l.reset();
   enc_r.reset();
@@ -75,12 +75,12 @@ void forward(double target, double cruise_v, double accel, bool reverse) {
       voltage += feedforward(projected_accel, KAFF_FWD, 0);
     }
     else {
-      voltage = -chassis_piv.Calculate(projected_pos, projected_velo, std::abs(encoder_avg), velocity, LIMIT_FWD, MAX_FWD);
+      voltage = -chassis_piv.Calculate(projected_pos, projected_velo, std::abs(encoder_avg), -velocity, LIMIT_FWD, MAX_FWD);
       voltage -= feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
       voltage -= feedforward(projected_accel, KAFF_FWD, 0);
     }
 
-    angle_volt = turn_pid.Calculate(imu_offset,angle,LIMIT_TURN, MAX_TURN);
+    //angle_volt = turn_pid.Calculate(imu_offset,angle,LIMIT_TURN, MAX_TURN);
     volt_chas(voltage + angle_volt, voltage - angle_volt);
 
     if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
@@ -111,16 +111,17 @@ void turn(double target, double cruise_v, double accel, bool reverse) {
       voltage += feedforward(projected_accel, KAFF_TURN, 0);
     }
     else {
-      voltage = -turn_pid.Calculate(projected_theta, std::abs(angle), LIMIT_FWD, MAX_FWD);
+      voltage = -turn_pid.Calculate(projected_theta, std::abs(angle), LIMIT_TURN, MAX_TURN);
       voltage -= feedforward(projected_velo, KVFF_TURN, KVFF_INT_TURN);
       voltage -= feedforward(projected_accel, KAFF_TURN, 0);
     }
 
-//    if(std::abs(turn_pid.error) <= 1) break;
+    if(std::abs(turn_pid.error) <= 1 && projected_theta == target) break;
     volt_chas(voltage, -voltage);
 
     delay(15);
   }
+  volt_chas(0,0);
 }
 
 //arcs not finished
@@ -200,6 +201,8 @@ void pwr_lift(int pwr) {
   mtr_lift.move_velocity(pwr);
 }
 
+int counter = 0;
+
 void pure_pursuiter(Path path, double v, double a, double lookahead, double theta , double theta_end, double max_change, double extra_dist, bool reverse) {
   Motion_Profile prof(v,a);
   PurePursuit pursuit(lookahead);
@@ -268,7 +271,6 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
     if(a_target > 0) v_target = fmin(path[index_end][V], v_target);
     else if (a_target < 0) v_target = fmax(path[index_end][V], v_target);
     else v_target = path[index_end][V];
-
 
     proj_vl = v_target * (2 + pursuit.curvature * WHEELBASE) / 2;
     proj_vr = v_target * (2 - pursuit.curvature * WHEELBASE) / 2;
@@ -340,11 +342,39 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
   while(true) {
     odo.calculate_state();
     turn_power = turn.Calculate(theta_end, odo.state[THETA], LIMIT_TURN, MAX_TURN);
-    if(std::abs(turn.error) < .5) break;
+    if(std::abs(turn.error) < .5 && std::abs(turn_power) <= 1000) counter++;
+    if(counter >= 5) break;
     volt_chas(-turn_power,turn_power);
     delay(DT);
   }
   volt_chas(0,0);
+}
+
+void stack() {
+  double tilt_offset = 0;
+  while(!bump.get_value()) {
+      if(mtr_tilt.get_position() - tilt_offset < 1000) mtr_tilt.move(127);
+      else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(127 - 20);
+      else if (mtr_tilt.get_position() - tilt_offset < 3000) mtr_tilt.move(127 - 40);
+      else if (mtr_tilt.get_position() - tilt_offset < 3500) mtr_tilt.move(127 - 60);
+      else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(127 - 80);
+      else mtr_tilt.move(127 - 110);
+
+      mtr_rollR.move(60);
+      mtr_rollL.move(60);
+  }
+  volt_chas(5000,5000);
+  delay(500);
+  volt_chas(0,0);
+  while(!limit.get_value()) {
+    mtr_tilt.move(-127);
+    mtr_rollR.move(-20);
+    mtr_rollL.move(-20);
+
+  }
+
+  mtr_tilt.move_velocity(0);
+  forward(1000,2000,10000,true);
 }
 
 void blue_auton(){

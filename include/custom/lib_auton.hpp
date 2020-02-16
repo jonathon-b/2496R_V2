@@ -37,5 +37,6 @@ extern void blue_auton();
 
 extern void lift(int pwr, int time);
 
+extern void stack();
 
 #endif

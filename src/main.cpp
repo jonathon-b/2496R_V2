@@ -27,21 +27,7 @@ void auton_lift() {
 }
 
 void autonomous() {
-	pwr_intake(127);
-	forward(1300,1100,1200,false);
-	Spline path1({0,0,90*DEG_TO_RAD}, {1020, 1050, 45 * DEG_TO_RAD}, 0.25, 0.015);
-	pure_pursuiter(path1.path, 1200, 900, 300 ,90 , 90, 400, 400, true);
-	forward(1880,550,1000,false);
-	delay(600);
-	pwr_intake(0);
-	forward(1500,1700,1800,true);
-	turn(123, 150, 200, true);
-	volt_chas(4000,4000);
-	delay(1500);
-	volt_chas(0,0);
-	stack();
 
-	volt_chas(0,0);
 	//blue_auton();
 	/*
 	pwr_intake(0);
@@ -217,7 +203,22 @@ void autonomous() {
 
 bool lift_auto = false;
 void opcontrol() {
-
+	while(imu.is_calibrating()) {}
+	pwr_intake(50);
+	Task lift_start(lift_task);
+	forward(1300,1300,1300,false);
+	Spline path1({0,0,90*DEG_TO_RAD}, {1013, 1050, 45 * DEG_TO_RAD}, 0.25, 0.015);
+	pure_pursuiter(path1.path, 1700, 1800, 300 ,90 , 90, 400, 300, true);
+	forward(1850,800,1500,false);
+	delay(500);
+	pwr_intake(0);
+	forward(1500,1900,1700,true);
+	turn(125, 150, 150, true);
+	volt_chas(8000,8000);
+	delay(750);
+	volt_chas(0,0);
+	stack();
+	volt_chas(0,0);
 
 	while (true) {
 

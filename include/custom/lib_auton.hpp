@@ -39,4 +39,6 @@ extern void lift(int pwr, int time);
 
 extern void stack();
 
+extern void lift_task();
+
 #endif

@@ -154,6 +154,11 @@
                 "version": "3.2.1"
             }
         },
-        "upload_options": {}
+        "upload_options": {
+            "compress_bin": true,
+            "description": "Created with PROS",
+            "remote_name": "My PROS Project",
+            "slot": 2
+        }
     }
 }

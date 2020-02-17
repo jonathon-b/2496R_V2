@@ -20,10 +20,10 @@
 #define KVFF_INT_TURN 1459.96
 
 #define KP_TURN 250
-#define KI_TURN 25
+#define KI_TURN 16
 #define KD_TURN 0
 #define LIMIT_TURN 10
-#define MAX_TURN 1500.0
+#define MAX_TURN 500.0
 
 #define RPM_TO_ENCPS 8.72727273 * 2
 
@@ -80,7 +80,7 @@ void forward(double target, double cruise_v, double accel, bool reverse) {
       voltage -= feedforward(projected_accel, KAFF_FWD, 0);
     }
 
-    //angle_volt = turn_pid.Calculate(imu_offset,angle,LIMIT_TURN, MAX_TURN);
+    angle_volt = turn_pid.Calculate(imu_offset,angle,LIMIT_TURN, MAX_TURN);
     volt_chas(voltage + angle_volt, voltage - angle_volt);
 
     if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
@@ -374,7 +374,19 @@ void stack() {
   }
 
   mtr_tilt.move_velocity(0);
-  forward(1000,2000,10000,true);
+  volt_chas(-10000,-19000);
+  delay(1000);
+  volt_chas(0,0);
+
+}
+
+void lift_task(){
+  pwr_lift(127);
+  delay(270);
+  pwr_lift(-127);
+  delay(300);
+  pwr_lift(0);
+  pwr_intake(127);
 }
 
 void blue_auton(){

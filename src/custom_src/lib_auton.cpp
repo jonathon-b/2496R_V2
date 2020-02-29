@@ -9,19 +9,19 @@
 #define KVFF_INT_FWD 1500.0
 
 #define KP_FWD 80
-#define KI_FWD 0.2
-#define KV_FWD 7
+#define KI_FWD 0.5
+#define KV_FWD 5
 //80 0.2 7
 #define LIMIT_FWD 100
 #define MAX_FWD 500
 
-#define KVFF_TURN 22.5339
+#define KVFF_TURN 25.5339
 #define KAFF_TURN 5.5
 #define KVFF_INT_TURN 1459.96
 
-#define KP_TURN 250
-#define KI_TURN 16
-#define KD_TURN 0
+#define KP_TURN 260
+#define KI_TURN 26
+#define KD_TURN 1000
 #define LIMIT_TURN 10
 #define MAX_TURN 500.0
 
@@ -37,6 +37,62 @@ void volt_chas(double l_pwr, double r_pwr) {
 
 double feedforward(double value, double gain, double intercept) {
   return value * gain + intercept;
+}
+
+void forward(double target, double cruise_v, double accel, bool reverse, int limit){
+  PIV chassis_piv(KP_FWD, KI_FWD, KV_FWD);
+  PID turn_pid(KP_TURN, 0, KD_TURN);
+  Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
+  double projected_pos = 0, projected_velo = 0, projected_accel = 0;
+
+  int time=0;
+  double voltage = 0;
+  double velocity = 0;
+  double prev_encoder_avg = 0;
+  double encoder_avg = 0;
+
+  double imu_offset = imu.get_yaw();
+  double angle = 0;
+  double angle_volt = 0;
+
+  enc_l.reset();
+  enc_r.reset();
+
+  while(time<limit) {
+    prev_encoder_avg = encoder_avg;
+    profile.trap_1d(target, projected_pos, projected_velo, projected_accel);
+
+    encoder_avg = (enc_l.get_value() + enc_r.get_value())/2;
+
+    angle = imu.get_yaw() - imu_offset;
+
+    //chassis_piv.filter((encoder_avg - prev_encoder_avg)/DT*1000);
+    velocity = (mtr_chasFL.get_actual_velocity() + mtr_chasFR.get_actual_velocity())/2 * RPM_TO_ENCPS;
+    printf("POS: %.2f   proj_pos: %.2f    velo: %.2f    proj_velo: %.2f   accel: %.2f\n", encoder_avg, projected_pos, velocity, projected_velo, projected_accel);
+
+    if(!reverse) {
+      voltage = chassis_piv.Calculate(projected_pos, projected_velo, std::abs(encoder_avg), velocity,  LIMIT_FWD, MAX_FWD);
+      voltage += feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
+      voltage += feedforward(projected_accel, KAFF_FWD, 0);
+    }
+    else {
+      voltage = -chassis_piv.Calculate(projected_pos, projected_velo, std::abs(encoder_avg), -velocity, LIMIT_FWD, MAX_FWD);
+      voltage -= feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
+      voltage -= feedforward(projected_accel, KAFF_FWD, 0);
+    }
+
+    angle_volt = turn_pid.Calculate(0,angle,LIMIT_TURN, MAX_TURN);
+    volt_chas(voltage + angle_volt, voltage - angle_volt);
+
+    //if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
+    if(projected_velo < 10) break;
+
+    delay(15);
+    time++;
+  }
+  volt_chas(0,0);
+  chassis_stop();
+
 }
 
 void forward(double target, double cruise_v, double accel, bool reverse) {
@@ -80,15 +136,127 @@ void forward(double target, double cruise_v, double accel, bool reverse) {
       voltage -= feedforward(projected_accel, KAFF_FWD, 0);
     }
 
-    angle_volt = turn_pid.Calculate(imu_offset,angle,LIMIT_TURN, MAX_TURN);
+    angle_volt = turn_pid.Calculate(0,angle,LIMIT_TURN, MAX_TURN);
     volt_chas(voltage + angle_volt, voltage - angle_volt);
 
-    if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
+    //if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
+    if(projected_velo < 10) break;
 
     delay(15);
   }
   volt_chas(0,0);
+  chassis_stop();
+
 }
+
+void pid_fwd(double target) {
+  PID fwd(60, 0, 0);
+  enc_l.reset();
+  enc_r.reset();
+  double power = 0;
+  while(true){
+    power = fwd.Calculate(target, (enc_l.get_value() + enc_r.get_value())/2, LIMIT_FWD, MAX_FWD);
+    power = fmin(9000, power);
+    volt_chas(power, power);
+    delay(DT);
+    if(std::abs(fwd.error) <= 10 && std::abs(power) <= 2000) break;
+  }
+  volt_chas(0,0);
+  chassis_stop();
+}
+
+void forward_stack(double target, double cruise_v, double accel, bool reverse) {
+  PID chassis_piv(KP_FWD, 0, 0);
+  PID turn_pid(KP_TURN, 0, KD_TURN);
+  Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
+  double projected_pos = 0, projected_velo = 0, projected_accel = 0;
+
+  double voltage = 0;
+  double velocity = 0;
+  double prev_encoder_avg = 0;
+  double encoder_avg = 0;
+
+  double imu_offset = imu.get_yaw();
+  double angle = 0;
+  double angle_volt = 0;
+
+  enc_l.reset();
+  enc_r.reset();
+
+  while(true) {
+    prev_encoder_avg = encoder_avg;
+    profile.trap_1d(target, projected_pos, projected_velo, projected_accel);
+
+    encoder_avg = (enc_l.get_value() + enc_r.get_value())/2;
+
+    angle = imu.get_yaw() - imu_offset;
+
+    //chassis_piv.filter((encoder_avg - prev_encoder_avg)/DT*1000);
+    velocity = (mtr_chasFL.get_actual_velocity() + mtr_chasFR.get_actual_velocity())/2 * RPM_TO_ENCPS;
+    printf("POS: %.2f   proj_pos: %.2f    velo: %.2f    proj_velo: %.2f   accel: %.2f\n", encoder_avg, projected_pos, velocity, projected_velo, projected_accel);
+
+    if(!reverse) {
+      voltage = chassis_piv.Calculate(projected_pos, std::abs(encoder_avg), LIMIT_FWD, MAX_FWD);
+      voltage += feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
+      voltage += feedforward(projected_accel, KAFF_FWD, 0);
+    }
+    else {
+      voltage = -chassis_piv.Calculate(projected_pos, std::abs(encoder_avg), LIMIT_FWD, MAX_FWD);
+      voltage -= feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
+      voltage -= feedforward(projected_accel, KAFF_FWD, 0);
+    }
+
+    angle_volt = turn_pid.Calculate(0,angle,LIMIT_TURN, MAX_TURN);
+    volt_chas(voltage + angle_volt, voltage - angle_volt);
+
+    //if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
+    if(projected_velo < 10) break;
+
+    delay(15);
+  }
+  volt_chas(0,0);
+  chassis_stop();
+
+}
+/*void turn(double target, double cruise_v, double accel, bool reverse) {
+  PID turn_pid(KP_TURN, KI_TURN, KD_TURN);
+  Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
+  double projected_theta = 0, projected_velo = 0, projected_accel = 0;
+
+  double voltage = 0;
+
+  double angle_offset = imu.get_yaw();
+  double angle = 0;
+  double prev_angle = 0;
+  while(true) {
+    profile.trap_1d(target, projected_theta, projected_velo, projected_accel);
+    prev_angle = angle;
+    angle = imu.get_yaw() - angle_offset;
+
+    if(!reverse) {
+      voltage = turn_pid.Calculate(projected_theta, std::abs(angle), LIMIT_TURN, MAX_TURN);
+      voltage += feedforward(projected_velo, KVFF_TURN, KVFF_INT_TURN);
+      voltage += feedforward(projected_accel, KAFF_TURN, 0);
+    }
+    else {
+      voltage = -turn_pid.Calculate(projected_theta, std::abs(angle), LIMIT_TURN, MAX_TURN);
+      voltage -= feedforward(projected_velo, KVFF_TURN, KVFF_INT_TURN);
+      voltage -= feedforward(projected_accel, KAFF_TURN, 0);
+    }
+    printf("\n\nERROR : %.2f      \nangle: %.2f     projected_theta: %.2f\n", turn_pid.error, imu.get_yaw() - angle_offset, projected_theta);
+    if(std::abs(turn_pid.error) <= 1 && projected_theta == target) {
+      printf("I DONT LIKE TO WORK");
+      pwr_intake(0);
+      break;
+
+    }
+
+    volt_chas(voltage, -voltage);
+
+    delay(15);
+  }
+  chassis_stop();
+}*/
 
 void turn(double target, double cruise_v, double accel, bool reverse) {
   PID turn_pid(KP_TURN, KI_TURN, KD_TURN);
@@ -116,13 +284,16 @@ void turn(double target, double cruise_v, double accel, bool reverse) {
       voltage -= feedforward(projected_accel, KAFF_TURN, 0);
     }
 
-    if(std::abs(turn_pid.error) <= 1 && projected_theta == target) break;
+    //if(std::abs(turn_pid.error) <= 1 && projected_theta == target) break;
+    if(projected_velo == 0) break;
     volt_chas(voltage, -voltage);
 
     delay(15);
   }
   volt_chas(0,0);
+  chassis_stop();
 }
+
 
 //arcs not finished
 void arc_turns(double target_angle, double radius, double cruise_v, double accel, bool reverse) {
@@ -350,35 +521,90 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
   volt_chas(0,0);
 }
 
+
+void pid_turn(double target) {
+  PID pid_turn(260,20,1000);
+  double angle_offset = imu.get_yaw();
+  double power = 0;
+  while(true){
+    power = pid_turn.Calculate(target, imu.get_yaw() - angle_offset, LIMIT_TURN, 400);
+    volt_chas(power, -power);
+    delay(DT);
+    if(std::abs(pid_turn.error) <= 1 && std::abs(power) <= 2000) break;
+  }
+  volt_chas(0,0);
+  chassis_stop();
+}
+
+
 void stack() {
   double tilt_offset = 0;
-  while(!bump.get_value()) {
-      if(mtr_tilt.get_position() - tilt_offset < 1000) mtr_tilt.move(127);
-      else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(127 - 20);
-      else if (mtr_tilt.get_position() - tilt_offset < 3000) mtr_tilt.move(127 - 40);
-      else if (mtr_tilt.get_position() - tilt_offset < 3500) mtr_tilt.move(127 - 60);
-      else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(127 - 80);
-      else mtr_tilt.move(127 - 110);
 
-      mtr_rollR.move(60);
-      mtr_rollL.move(60);
+  while(!bump.get_value()) {
+    if(mtr_tilt.get_position() - tilt_offset < 1000) mtr_tilt.move(127);
+    else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(100);
+    else if (mtr_tilt.get_position() - tilt_offset < 3000) mtr_tilt.move(127 - 60);
+    else if (mtr_tilt.get_position() - tilt_offset < 3500) mtr_tilt.move(127 - 80);
+    else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(127 - 80);
+    else mtr_tilt.move(127 - 90);
+
+      mtr_rollR.move(-10);
+      mtr_rollL.move(-10);
   }
+
+  tilt_offset = mtr_tilt.get_position() - 4000;
   volt_chas(5000,5000);
-  delay(500);
+  delay(200);
   volt_chas(0,0);
   while(!limit.get_value()) {
     mtr_tilt.move(-127);
-    mtr_rollR.move(-20);
-    mtr_rollL.move(-20);
-
+    if(mtr_tilt.get_position() - tilt_offset < 2300) break;
+    delay(15);
   }
 
+  mtr_rollR.move(-100);
+  mtr_rollL.move(-100);
+  forward(500,800,1000, true);
   mtr_tilt.move_velocity(0);
-  volt_chas(-10000,-19000);
-  delay(1000);
   volt_chas(0,0);
+  chassis_stop();
 
 }
+
+void aggro_stack() {
+  double tilt_offset = 0;
+
+  while(!bump.get_value()) {
+    if(mtr_tilt.get_position() - tilt_offset < 1000) mtr_tilt.move(127);
+    else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(100);
+    else if (mtr_tilt.get_position() - tilt_offset < 3000) mtr_tilt.move(127 - 60);
+    else if (mtr_tilt.get_position() - tilt_offset < 3500) mtr_tilt.move(127 - 80);
+    else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(127 - 80);
+    else mtr_tilt.move(127 - 90);
+
+      mtr_rollR.move(-10);
+      mtr_rollL.move(-10);
+  }
+
+  tilt_offset = mtr_tilt.get_position() - 4000;
+  volt_chas(5000,5000);
+  delay(200);
+  volt_chas(0,0);
+  while(!limit.get_value()) {
+    mtr_tilt.move(-127);
+    //if(mtr_tilt.get_position() - tilt_offset < 2300) break;
+    delay(15);
+  }
+
+  mtr_rollR.move(-100);
+  mtr_rollL.move(-100);
+  forward(500,800,1000, true);
+  mtr_tilt.move_velocity(0);
+  volt_chas(0,0);
+  chassis_stop();
+
+}
+
 
 void lift_task(){
   pwr_lift(127);
@@ -390,11 +616,14 @@ void lift_task(){
 }
 
 void blue_auton(){
-  pwr_intake(127);
-  lift(90, 300);
-  forward(300, 600, 500, false);
-  forward(600, 300, 300, false);
+  pwr_intake(-127);
+  volt_chas(6000,6000);
+  delay(1000);
+  volt_chas(0,0);
+  delay(250);
+  volt_chas(-6000,-6000);
+  delay(750);
+  volt_chas(0,0);
   pwr_intake(0);
-  forward(600, 400,350, true);
 
 }

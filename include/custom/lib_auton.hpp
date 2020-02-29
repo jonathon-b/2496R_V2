@@ -20,10 +20,15 @@ extern void stoptake();
 extern void pwr_intake(int pwr);
 extern void volt_chas(double l_pwr, double r_pwr);
 extern double feedforward(double value, double gain, double intercept);
-
+extern void forward_stack(double target, double cruise_v, double accel, bool reverse);
+extern void pid_fwd(double target);
+extern void aggro_stack();
 extern void forward(double target, double cruise_v, double accel, bool reverse);
+extern void forward(double target, double cruise_v, double accel, bool reverse, int limit);
 
 extern void turn(double target, double cruise_v, double accel, bool reverse);
+
+extern void pid_turn(double target);
 
 extern void arc_turns(double target_angle, double radius, double cruise_v, double accel, bool reverse);
 
@@ -31,7 +36,7 @@ extern void pwr_intake(int pwr);
 
 extern void pwr_lift(int pwr);
 
-extern void pure_pursuiter(Path path, double v, double a, double lookahead, double theta , double theta_end, double max_change, double extra_dist, bool reverse);
+extern void pure_pursuiter(Path path, double v, double a, double lookahead, double theta, double theta_end, double max_change, double extra_dist, bool reverse);
 
 extern void blue_auton();
 

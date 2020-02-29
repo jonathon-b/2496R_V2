@@ -43,12 +43,12 @@ extern ADIDigitalIn limit_index;
 //208.348289
 
 #define GRAVFF 0
-#define KP_LIFT 60
+#define KP_LIFT 40
 #define KI_LIFT 0.2
-#define KD_LIFT 750
+#define KD_LIFT 0
 //50 0.2 200
 #define LIMIT_LIFT 100
-#define LIFT_MAX 4000
+#define LIFT_MAX 500
 
 #define LIFTH_BOTTOM 0
 #define LIFTH_SMALLTOWER -885
@@ -69,5 +69,6 @@ extern PID autolift;
 extern int index_heights;
 extern double lift_value;
 extern void pid_lift();
-
+extern void chassis_brake(const motor_brake_mode_e_t mode);
+extern void chassis_stop();
 #endif

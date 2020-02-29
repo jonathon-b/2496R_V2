@@ -132,14 +132,14 @@ void drive_tray() {
     //mtr_tilt.move(TILT_PWR * cos((mtr_tilt.get_position()-tilt_offset) * PI * 2.0 / TILT_MAX ));
 
     if(mtr_tilt.get_position() - tilt_offset < 1000) mtr_tilt.move(TILT_PWR);
-    else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(TILT_PWR - 40);
+    else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(TILT_PWR);
     else if (mtr_tilt.get_position() - tilt_offset < 3000) mtr_tilt.move(TILT_PWR - 60);
-    else if (mtr_tilt.get_position() - tilt_offset < 3500) mtr_tilt.move(TILT_PWR - 80);
-    else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(TILT_PWR - 100);
-    else mtr_tilt.move(TILT_PWR - 110);
+    else if (mtr_tilt.get_position() - tilt_offset < 3500) mtr_tilt.move(TILT_PWR - 90);
+    else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(TILT_PWR - 110);
+    else mtr_tilt.move(TILT_PWR - 120);
 
-    //mtr_rollR.move(-4);
-    //mtr_rollL.move(-4);
+    mtr_rollR.move(-10);
+    mtr_rollL.move(-10);
 
   }
   else if(control.get_digital(E_CONTROLLER_DIGITAL_DOWN)){

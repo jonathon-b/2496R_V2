@@ -26,10 +26,128 @@ void auton_lift() {
 	}
 }
 
-void autonomous() {
+bool op_is_on = false;
+	bool stack_me = false;
+void auto_index(){
+  while (limit_index.get_value() == false && op_is_on == false){
+    pwr_intake(127);
+  }
+	stack_me = true;
+  pwr_intake(0);
+}
 
-	//blue_auton();
+bool lift_auto = false;
+
+void autonomous() {
+	//official 6 blue
 	/*
+	while(imu.is_calibrating()) {}
+	chassis_brake(E_MOTOR_BRAKE_HOLD);
+	pwr_intake(127);
+	forward(1750,650,1600,false);
+	delay(100);
+	pid_turn(30);
+	delay(100);
+	Task indexer_on(auto_index);
+	forward(475, 700, 1500,false);
+	delay(100);
+	pid_turn(-30);
+	delay(100);
+	forward_stack(960,1300,1500,true);
+	stack_me = limit_index.get_value();
+	//pid_fwd(-920);
+	turn(136, 170, 200, true);
+	//pid_turn(-135);
+	op_is_on = true;
+	mtr_rollL.move_velocity(0);
+	mtr_rollR.move_velocity(0);
+	forward(1250,1400,1600,false);
+	//chassis_stop();
+	stack_me = true;
+	//volt_chas(3000,3000);
+	if(stack_me) stack();
+	volt_chas(0,0);
+	chassis_brake(E_MOTOR_BRAKE_COAST);
+	delay(200);
+ 	pwr_intake(0);
+	*/
+
+
+	//official 6 red
+	/*while(imu.is_calibrating()) {}
+	chassis_brake(E_MOTOR_BRAKE_HOLD);
+	pwr_intake(127);
+	forward(1750,650,1600,false);
+	delay(100);
+	pid_turn(-30);
+	delay(100);
+	Task indexer_on(auto_index);
+	forward(475, 700, 1500,false);
+	delay(100);
+	pid_turn(30);
+	delay(100);
+	forward_stack(960,1300,1500,true);
+	stack_me = limit_index.get_value();
+	//pid_fwd(-920);
+	turn(136, 170, 200, false);
+	//pid_turn(-135);
+	op_is_on = true;
+	mtr_rollL.move_velocity(0);
+	mtr_rollR.move_velocity(0);
+	forward(1250,1400,1600,false);
+	//chassis_stop();
+	stack_me = true;
+	//volt_chas(3000,3000);
+	if(stack_me) stack();
+	volt_chas(0,0);
+	chassis_brake(E_MOTOR_BRAKE_COAST);
+	delay(200);
+ 	pwr_intake(0);
+	*/
+
+	//protected 3 cube auton BLUE
+	/*
+	while(imu.is_calibrating()) {}
+  chassis_brake(E_MOTOR_BRAKE_HOLD);
+  pwr_intake(127);
+  forward(800,800,1000,false);
+  delay(30);
+  turn(80, 180, 250, false);
+  Task indexer_on(auto_index);
+  forward(950,800,800,false);
+  //turn(45, 180,250, false);
+  pid_turn(40);
+  delay(100);
+  pwr_intake(0);
+  forward(600,500,1200,false);
+  aggro_stack();
+  volt_chas(0,0);
+  chassis_brake(E_MOTOR_BRAKE_COAST);
+	*/
+
+
+	//protected 3 cube auton RED
+	/*
+	while(imu.is_calibrating()) {}
+  chassis_brake(E_MOTOR_BRAKE_HOLD);
+  pwr_intake(127);
+  forward(800,800,1000,false);
+  delay(30);
+  turn(80, 180, 250, true);
+  Task indexer_on(auto_index);
+  forward(950,800,800,false);
+  //turn(45, 180,250, false);
+  pid_turn(-40);
+  delay(100);
+  pwr_intake(0);
+  forward(600,500,1200,false);
+  aggro_stack();
+  volt_chas(0,0);
+  chassis_brake(E_MOTOR_BRAKE_COAST);
+*/
+
+
+	/*push 1 cube auton
 	pwr_intake(0);
 	mtr_chasBL.move_velocity(127);
 	mtr_chasFL.move_velocity(127);
@@ -49,7 +167,9 @@ void autonomous() {
 	mtr_chasFR.move_velocity(0);
 	*/
 
-	//smooth velocity
+
+
+	//smooth velocity test
 
 	/*
 	double enc = 0;
@@ -68,13 +188,13 @@ void autonomous() {
 
 	*/
 
-	//piv test/tune
+	//piv test/tune test
 
 	//forward(2000,500,750, false);
 	//arc_turns(90, 1000, 500, 750, false);
 
 
-	/*
+	/* odometry test/tune test
 	double gyro = 0;
 	double prev_gyro = 0;
 
@@ -97,7 +217,7 @@ void autonomous() {
 		delay(15);
 	}*/
 
-	/*
+	/* //odometry final test
 	Odometry odo(0,0,0);
 	while(true) {
 		odo.calculate_state();
@@ -106,14 +226,14 @@ void autonomous() {
 	}
 	*/
 
-	/*
+	/* //final velocity test
 	while(true) {
 		printf("left_velo: %.2f			right_velo: %.2f\n", mtr_chasBL.get_actual_velocity() * 6, mtr_chasBR.get_actual_velocity() * 6);
 		delay(15);
 	}
 	*/
 
-	/*
+	/* //purepursuit test
 	Motion_Profile prof(500,750);
 	std::vector<double> start = {0,0,90 * DEG_TO_RAD};
 	std::vector<double> end = {100,100,45 * DEG_TO_RAD};
@@ -125,7 +245,7 @@ void autonomous() {
 	}
 	*/
 
-	//injection
+	//injection of points test
 	/*
 	Motion_Profile prof(1000, 2000);
 	std::vector<double> start = {0,0,90 * DEG_TO_RAD};
@@ -139,7 +259,7 @@ void autonomous() {
 	}
 	*/
 
-	/*
+	/* //changing odo to just imu test
 	Odometry odo(0,0,90);
 	while(true) {
 		odo.calculate_state();
@@ -154,7 +274,7 @@ void autonomous() {
 
 	//path_follow(path.path, 300, 450, 100, 90);
 
-	/*
+	/* testing odometry with angle offset
 	Odometry odo(0,0,90);
 	while(true) {
 		odo.calculate_state();
@@ -201,28 +321,42 @@ void autonomous() {
 
 }
 
-bool lift_auto = false;
 void opcontrol() {
+	//control.print(1,1,std::to_string(-false));
+
+ //protected auton (empty)
+/*
+
+ */
+
+
+
 	while(imu.is_calibrating()) {}
-	pwr_intake(50);
+	chassis_brake(E_MOTOR_BRAKE_HOLD);
+	pwr_intake(70);
 	Task lift_start(lift_task);
-	forward(1300,1300,1300,false);
-	Spline path1({0,0,90*DEG_TO_RAD}, {1013, 1050, 45 * DEG_TO_RAD}, 0.25, 0.015);
-	pure_pursuiter(path1.path, 1700, 1800, 300 ,90 , 90, 400, 300, true);
-	forward(1850,800,1500,false);
-	delay(500);
+	forward(1800,700,1500,false);
+	Spline path1({0,0,90*DEG_TO_RAD}, {1000, 1455, 45 * DEG_TO_RAD}, 0.25, 0.015);
+	pure_pursuiter(path1.path, 1400, 1300, 300 ,90 , 90, 400, 300, true);
+	pwr_intake(127);
+	//Task intake(auto_index);
+	forward(1940,800,1500,false);
+	//pwr_intake(30);
+	forward(1600,1500,1800,true);
 	pwr_intake(0);
-	forward(1500,1900,1700,true);
-	turn(125, 150, 150, true);
-	volt_chas(8000,8000);
-	delay(750);
+	turn(125, 160, 280, true);
+	volt_chas(12000,12000);
+	delay(500);
 	volt_chas(0,0);
 	stack();
 	volt_chas(0,0);
+	chassis_brake(E_MOTOR_BRAKE_COAST);
 
+
+	op_is_on = true;
 	while (true) {
-
-	drive_chassis();
+		chassis_brake(E_MOTOR_BRAKE_COAST);
+		drive_chassis();
 
 		if(control.get_digital_new_press(E_CONTROLLER_DIGITAL_X)) lift_auto = !lift_auto;
 		lift_auto? pid_lift() : drive_lift();
@@ -231,6 +365,7 @@ void opcontrol() {
 
 		delay(10);
 	}
+
 
 
 

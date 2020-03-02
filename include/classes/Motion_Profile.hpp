@@ -55,6 +55,8 @@ class Motion_Profile{
 
     double calculate_path_curvature(std::vector<double> p1, std::vector<double> p2, std::vector<double> p3) {
       //does big math to find a circle fitting those three points then calculates curvature given radius
+      //math will be in documentation for this code.
+      //math will find radius and 1/radius finds curvature
       double k1 = 0.5 * (p1[X] * p1[X] + p1[Y] * p1[Y] - p2[X] * p2[X] - p2[Y] * p2[Y])/(p1[X]-p2[X]);
       double k2 = (p1[Y] - p2[Y])/(p1[X] - p2[X]);
 
@@ -67,12 +69,14 @@ class Motion_Profile{
       return 1 / sqrt( pow(p1[X] - center_x, 2) + pow(p1[Y]-center_y,2) ); // curvature = 1/radius
     }
 
-    //will have to change for s-curve
+    //this method should take the path you give it and then add all of the appropriate velocity and acceleration values
     std::vector<std::vector<double>> inject_trapezoid(std::vector<std::vector<double>> path_) {
+      //the way this algorithm works is shown in motion profile explanation for 2-dimensional paths
+     
       std::vector<std::vector<double>> path = path_;
       double curvature = 0;
       double delta_x = 0;
-      for(int i = 0; i < path.size(); i++) { //calculating forward acceleration
+      for(int i = 0; i < path.size(); i++) { //calculating forward acceleration which is the forward "ramp"
         if(i == 0) {
           path[i][V] = 0;
           path[i][A] = max_accel;
@@ -81,7 +85,7 @@ class Motion_Profile{
           path[i][V] = 0;
           path[i][A] = -max_accel;
         }
-        else {
+        else { //adds the second-iteration to make sure robot can have a balance of translational speed and rotational speed
           curvature = calculate_path_curvature(path[i-1], path[i], path[i+1]);
           delta_x = hypot(path[i-1][X] - path[i][X], path[i-1][Y] - path[i][Y]);
           path[i][V] = std::fmin(1/curvature, sqrt(path[i-1][V] * path[i-1][V] + 2 * max_accel * delta_x) );
@@ -89,7 +93,7 @@ class Motion_Profile{
         }
       }
 
-      for(int i = path.size()-1; i >= 0; i--) {//calculating backward acceleration
+      for(int i = path.size()-1; i >= 0; i--) {//calculating backward acceleration which is the backward "ramp"
         if(i != 0 && i != path.size()-1) {
           delta_x = hypot(path[i+1][X] - path[i][X], path[i+1][Y] - path[i][Y]);
           path[i][V] = std::fmin(path[i][V], sqrt(path[i+1][V] * path[i+1][V] + 2 * max_accel * delta_x) );
@@ -102,10 +106,6 @@ class Motion_Profile{
 
       return path;
     }
-
-
-
-    //Andres fill in
 
 };
 

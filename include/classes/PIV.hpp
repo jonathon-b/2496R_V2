@@ -23,15 +23,18 @@ class PIV {
     }
 
     double Calculate(double target, double target_velo, double input, double input_velo, double limit, double max) {
+      //this is essentially a PID but for two measurements
+      //This is a full PID for position and a P loop for Velocity but renamed as PIV to combine the two.
+      //Controlling the velocity with a correction algorithm will allow robot to follow complicated movements accurately
       prev_error = error;
       error = target - input;
 
       std::abs((int)error) < limit? integral += error : integral = 0;
 
       integral >= 0? integral = fmin(integral, max): integral = fmax(integral, -max);
-
+    
       error_velo = target_velo - input_velo;
-
+      //PIV = P + I + V
       return kp*error + ki *integral + kv*error_velo;
     }
 };

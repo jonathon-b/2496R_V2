@@ -71,4 +71,6 @@ extern double lift_value;
 extern void pid_lift();
 extern void chassis_brake(const motor_brake_mode_e_t mode);
 extern void chassis_stop();
+
+extern bool op_is_on;
 #endif

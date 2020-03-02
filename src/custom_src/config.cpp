@@ -47,7 +47,7 @@ void pid_lift() {
   }
 
   lift_value = -autolift.Calculate(preset_heights[index_heights], pot.get_value()-pot_offset, LIMIT_LIFT, LIFT_MAX);
-  if(std::abs(autolift.error) <= 20) mtr_lift.move_velocity(0); 
+  if(std::abs(autolift.error) <= 20) mtr_lift.move_velocity(0);
   //if(std::abs(autolift.error) > 20) lift_value = -autolift.Calculate(preset_heights[index_heights], pot.get_value()-pot_offset, LIMIT_LIFT, LIFT_MAX) + GRAVFF;
 
   mtr_lift.move_voltage(lift_value); // it move gamer arm
@@ -71,3 +71,5 @@ void chassis_stop() {
   mtr_chasBR.move_velocity(0);
   mtr_chasBL.move_velocity(0);
 }
+
+bool op_is_on = false;

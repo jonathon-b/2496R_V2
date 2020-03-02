@@ -85,7 +85,10 @@ void forward(double target, double cruise_v, double accel, bool reverse, int lim
     volt_chas(voltage + angle_volt, voltage - angle_volt);
 
     //if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
-    if(projected_velo < 10) break;
+    if(projected_velo == 0) {
+      chassis_piv.kv = 0;
+      if(std::abs(chassis_piv.error) < 15);
+    }
 
     delay(15);
     time++;
@@ -397,10 +400,14 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
   double sign = 1;
   if(reverse) sign = -1;
 
+  double x_dir = std::abs(path[path.size()-1][X])/path[path.size()-1][X];
+  double y_dir = std::abs(path[path.size()-1][Y])/path[path.size()-1][Y];
+  bool past_x = false;
+  bool past_y = false;
+
   enc_l.reset();
   enc_r.reset();
   double conv = theta_end * DEG_TO_RAD;
-  path.push_back({path[path.size()-1][X] + cos(conv) * extra_dist, path[path.size()-1][Y] + sin(conv) * extra_dist, 0, -a});
   path = prof.inject_trapezoid(path);
   path.push_back({path[path.size()-1][X] + cos(conv) * extra_dist, path[path.size()-1][Y] + sin(conv) * extra_dist, 0, -a});
   for(int i = 0; i < path.size(); i++) {
@@ -442,6 +449,8 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
     if(a_target > 0) v_target = fmin(path[index_end][V], v_target);
     else if (a_target < 0) v_target = fmax(path[index_end][V], v_target);
     else v_target = path[index_end][V];
+
+    v_target = fmax(500,v_target);
 
     proj_vl = v_target * (2 + pursuit.curvature * WHEELBASE) / 2;
     proj_vr = v_target * (2 - pursuit.curvature * WHEELBASE) / 2;
@@ -493,7 +502,7 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
       pwm_r = prev_pwm_r + (pwm_r / std::abs(pwm_r)) * max_change;
     }
 
-    if(v_target == 0) break;
+    //if(v_target == 0) break;
 
     if(reverse) {
       volt_chas(-pwm_r, -pwm_l);
@@ -503,6 +512,26 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
     }
 
     //if(pursuit.lk[X] == path[path.size()-4][X] && pursuit.lk[Y] == path[path.size()-4][Y] && hypot(pursuit.lk[X] - odo.state[X], pursuit.lk[Y]-odo.state[Y]) < 20) break;
+    //if(hypot(path[path.size()-2][X] - sign * odo.state[X], path[path.size()-2][Y]- sign * odo.state[Y]) < 50) break;
+    if(x_dir == 1) {
+      if(path[path.size()-2][X] - sign * odo.state[X] < 0) past_x = true;
+      else past_x = false;
+    }
+    else {
+      if(path[path.size()-2][X] - sign * odo.state[X] > 0) past_x = true;
+      else past_x = false;
+    }
+
+    if(y_dir == 1) {
+      if(path[path.size()-2][Y] - sign * odo.state[Y] < 0) past_y = true;
+      else past_y = false;
+    }
+    else {
+      if(path[path.size()-2][Y] - sign * odo.state[Y] > 0) past_y = true;
+      else past_y = false;
+    }
+
+    if(past_x && past_y) break;
 
     printf("odo[X]: %.2f    odo[Y]: %.2f    odo[THETA]: %.2f\n\n", odo.state[X], odo.state[Y], odo.state[THETA]);
 
@@ -553,7 +582,7 @@ void stack() {
   }
 
   tilt_offset = mtr_tilt.get_position() - 4000;
-  volt_chas(5000,5000);
+  volt_chas(4000,4000);
   delay(200);
   volt_chas(0,0);
   while(!limit.get_value()) {
@@ -569,6 +598,39 @@ void stack() {
   volt_chas(0,0);
   chassis_stop();
 
+}
+
+void skill_stack() {
+  double tilt_offset = 0;
+
+  while(!bump.get_value()) {
+    if(mtr_tilt.get_position() - tilt_offset < 1000) mtr_tilt.move(127);
+    else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(127);
+    else if (mtr_tilt.get_position() - tilt_offset < 3000) mtr_tilt.move(127 - 60);
+    else if (mtr_tilt.get_position() - tilt_offset < 3500) mtr_tilt.move(127 - 90);
+    else if (mtr_tilt.get_position() - tilt_offset < 3750) mtr_tilt.move(127 - 100);
+    else mtr_tilt.move(127 - 100);
+
+      mtr_rollR.move(-10);
+      mtr_rollL.move(-10);
+  }
+
+  tilt_offset = mtr_tilt.get_position() - 4000;
+  volt_chas(5000,5000);
+  delay(200);
+  volt_chas(0,0);
+  while(!limit.get_value()) {
+    mtr_tilt.move(-127);
+    if(mtr_tilt.get_position() - tilt_offset < 2300) break;
+    delay(15);
+  }
+
+  mtr_rollR.move(-100);
+  mtr_rollL.move(-100);
+  forward(500,800,1000, true);
+  mtr_tilt.move_velocity(0);
+  volt_chas(0,0);
+  chassis_stop();
 }
 
 void aggro_stack() {
@@ -587,8 +649,7 @@ void aggro_stack() {
   }
 
   tilt_offset = mtr_tilt.get_position() - 4000;
-  volt_chas(5000,5000);
-  delay(200);
+  forward(1000,1000,1000,true);
   volt_chas(0,0);
   while(!limit.get_value()) {
     mtr_tilt.move(-127);

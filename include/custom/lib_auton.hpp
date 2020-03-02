@@ -18,13 +18,22 @@ extern void stoptake();
 */
 
 extern void pwr_intake(int pwr);
+
 extern void volt_chas(double l_pwr, double r_pwr);
+
 extern double feedforward(double value, double gain, double intercept);
+
 extern void forward_stack(double target, double cruise_v, double accel, bool reverse);
+
 extern void pid_fwd(double target);
+
 extern void aggro_stack();
+
 extern void forward(double target, double cruise_v, double accel, bool reverse);
+
 extern void forward(double target, double cruise_v, double accel, bool reverse, int limit);
+
+extern void skill_stack();
 
 extern void turn(double target, double cruise_v, double accel, bool reverse);
 

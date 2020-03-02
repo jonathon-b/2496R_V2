@@ -4,10 +4,12 @@
 #include "classes/Odometry.hpp"
 #include "classes/Spline.hpp"
 #include "classes/PurePursuit.hpp"
+//constants for forward feedforward
 #define KVFF_FWD 7.3529
 #define KAFF_FWD 2.5
 #define KVFF_INT_FWD 1500.0
 
+//constants for forward PIV
 #define KP_FWD 80
 #define KI_FWD 0.5
 #define KV_FWD 5
@@ -15,10 +17,12 @@
 #define LIMIT_FWD 100
 #define MAX_FWD 500
 
+//constants for turn feedforward
 #define KVFF_TURN 25.5339
 #define KAFF_TURN 5.5
 #define KVFF_INT_TURN 1459.96
 
+//constants for turn pid
 #define KP_TURN 260
 #define KI_TURN 26
 #define KD_TURN 1000
@@ -28,81 +32,24 @@
 #define RPM_TO_ENCPS 8.72727273 * 2
 
 
-void volt_chas(double l_pwr, double r_pwr) {
+void volt_chas(double l_pwr, double r_pwr) {//this functions sends voltage to left and right side of chassis
   mtr_chasBL.move_voltage(l_pwr);
   mtr_chasFL.move_voltage(l_pwr);
   mtr_chasBR.move_voltage(r_pwr);
   mtr_chasFR.move_voltage(r_pwr);
 }
 
-double feedforward(double value, double gain, double intercept) {
+double feedforward(double value, double gain, double intercept) {//this calculates feedforward linearly with the constant
+  //follows feedforward or y = (slope or gain) * (value or x) + (intercept or b)
   return value * gain + intercept;
 }
 
-void forward(double target, double cruise_v, double accel, bool reverse, int limit){
+void forward(double target, double cruise_v, double accel, bool reverse){
+  //this will do a 1-dimensional motion profile to complete forward motion
   PIV chassis_piv(KP_FWD, KI_FWD, KV_FWD);
-  PID turn_pid(KP_TURN, 0, KD_TURN);
-  Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
-  double projected_pos = 0, projected_velo = 0, projected_accel = 0;
-
-  int time=0;
-  double voltage = 0;
-  double velocity = 0;
-  double prev_encoder_avg = 0;
-  double encoder_avg = 0;
-
-  double imu_offset = imu.get_yaw();
-  double angle = 0;
-  double angle_volt = 0;
-
-  enc_l.reset();
-  enc_r.reset();
-
-  while(time<limit) {
-    prev_encoder_avg = encoder_avg;
-    profile.trap_1d(target, projected_pos, projected_velo, projected_accel);
-
-    encoder_avg = (enc_l.get_value() + enc_r.get_value())/2;
-
-    angle = imu.get_yaw() - imu_offset;
-
-    //chassis_piv.filter((encoder_avg - prev_encoder_avg)/DT*1000);
-    velocity = (mtr_chasFL.get_actual_velocity() + mtr_chasFR.get_actual_velocity())/2 * RPM_TO_ENCPS;
-    printf("POS: %.2f   proj_pos: %.2f    velo: %.2f    proj_velo: %.2f   accel: %.2f\n", encoder_avg, projected_pos, velocity, projected_velo, projected_accel);
-
-    if(!reverse) {
-      voltage = chassis_piv.Calculate(projected_pos, projected_velo, std::abs(encoder_avg), velocity,  LIMIT_FWD, MAX_FWD);
-      voltage += feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
-      voltage += feedforward(projected_accel, KAFF_FWD, 0);
-    }
-    else {
-      voltage = -chassis_piv.Calculate(projected_pos, projected_velo, std::abs(encoder_avg), -velocity, LIMIT_FWD, MAX_FWD);
-      voltage -= feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
-      voltage -= feedforward(projected_accel, KAFF_FWD, 0);
-    }
-
-    angle_volt = turn_pid.Calculate(0,angle,LIMIT_TURN, MAX_TURN);
-    volt_chas(voltage + angle_volt, voltage - angle_volt);
-
-    //if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
-    if(projected_velo == 0) {
-      chassis_piv.kv = 0;
-      if(std::abs(chassis_piv.error) < 15);
-    }
-
-    delay(15);
-    time++;
-  }
-  volt_chas(0,0);
-  chassis_stop();
-
-}
-
-void forward(double target, double cruise_v, double accel, bool reverse) {
-  PIV chassis_piv(KP_FWD, KI_FWD, KV_FWD);
-  PID turn_pid(KP_TURN, 0, KD_TURN);
-  Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
-  double projected_pos = 0, projected_velo = 0, projected_accel = 0;
+  PID turn_pid(KP_TURN, 0, KD_TURN); //this is autocorrect code which will keep robot going straight
+  Motion_Profile profile(std::abs(cruise_v),std::abs(accel)); //instances motion profile for PIV + feedforward
+  double projected_pos = 0, projected_velo = 0, projected_accel = 0; //variables for all targets
 
   double voltage = 0;
   double velocity = 0;
@@ -118,17 +65,18 @@ void forward(double target, double cruise_v, double accel, bool reverse) {
 
   while(true) {
     prev_encoder_avg = encoder_avg;
-    profile.trap_1d(target, projected_pos, projected_velo, projected_accel);
+    profile.trap_1d(target, projected_pos, projected_velo, projected_accel);//updates kinematic targets
 
-    encoder_avg = (enc_l.get_value() + enc_r.get_value())/2;
+    encoder_avg = (enc_l.get_value() + enc_r.get_value())/2; //gets input
 
     angle = imu.get_yaw() - imu_offset;
 
     //chassis_piv.filter((encoder_avg - prev_encoder_avg)/DT*1000);
-    velocity = (mtr_chasFL.get_actual_velocity() + mtr_chasFR.get_actual_velocity())/2 * RPM_TO_ENCPS;
+    velocity = (mtr_chasFL.get_actual_velocity() + mtr_chasFR.get_actual_velocity())/2 * RPM_TO_ENCPS;//finds current velocity
     printf("POS: %.2f   proj_pos: %.2f    velo: %.2f    proj_velo: %.2f   accel: %.2f\n", encoder_avg, projected_pos, velocity, projected_velo, projected_accel);
 
-    if(!reverse) {
+     //this will calculate the voltage of robot as voltage = PIV + VELO FF + ACCEL FF
+    if(!reverse) { 
       voltage = chassis_piv.Calculate(projected_pos, projected_velo, std::abs(encoder_avg), velocity,  LIMIT_FWD, MAX_FWD);
       voltage += feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
       voltage += feedforward(projected_accel, KAFF_FWD, 0);
@@ -138,12 +86,17 @@ void forward(double target, double cruise_v, double accel, bool reverse) {
       voltage -= feedforward(projected_velo, KVFF_FWD, KVFF_INT_FWD);
       voltage -= feedforward(projected_accel, KAFF_FWD, 0);
     }
-
+  
+    //voltage to correct robot's orientation
     angle_volt = turn_pid.Calculate(0,angle,LIMIT_TURN, MAX_TURN);
+    //voltage = POS PIV + ANGLE PID + VELO FF + ACCEL FF
     volt_chas(voltage + angle_volt, voltage - angle_volt);
 
     //if(std::abs(chassis_piv.error) <= 10 && projected_pos == target) break;
-    if(projected_velo < 10) break;
+    if(projected_velo == 0) {
+      chassis_piv.kv = 0; //removes this to allow for pid to correct to right position or KV values will fight against KP
+      if(std::abs(chassis_piv.error) < 15) break;
+    }
 
     delay(15);
   }
@@ -152,8 +105,10 @@ void forward(double target, double cruise_v, double accel, bool reverse) {
 
 }
 
-void pid_fwd(double target) {
+
+void pid_fwd(double target) { //this is to correct pid position in case we need to just go fast and not care about speed (a lil inaccurate)
   PID fwd(60, 0, 0);
+  //raw pid and since pid does all the work, the constants are different
   enc_l.reset();
   enc_r.reset();
   double power = 0;
@@ -169,6 +124,7 @@ void pid_fwd(double target) {
 }
 
 void forward_stack(double target, double cruise_v, double accel, bool reverse) {
+  //this is different because 
   PID chassis_piv(KP_FWD, 0, 0);
   PID turn_pid(KP_TURN, 0, KD_TURN);
   Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
@@ -221,47 +177,10 @@ void forward_stack(double target, double cruise_v, double accel, bool reverse) {
   chassis_stop();
 
 }
-/*void turn(double target, double cruise_v, double accel, bool reverse) {
-  PID turn_pid(KP_TURN, KI_TURN, KD_TURN);
-  Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
-  double projected_theta = 0, projected_velo = 0, projected_accel = 0;
-
-  double voltage = 0;
-
-  double angle_offset = imu.get_yaw();
-  double angle = 0;
-  double prev_angle = 0;
-  while(true) {
-    profile.trap_1d(target, projected_theta, projected_velo, projected_accel);
-    prev_angle = angle;
-    angle = imu.get_yaw() - angle_offset;
-
-    if(!reverse) {
-      voltage = turn_pid.Calculate(projected_theta, std::abs(angle), LIMIT_TURN, MAX_TURN);
-      voltage += feedforward(projected_velo, KVFF_TURN, KVFF_INT_TURN);
-      voltage += feedforward(projected_accel, KAFF_TURN, 0);
-    }
-    else {
-      voltage = -turn_pid.Calculate(projected_theta, std::abs(angle), LIMIT_TURN, MAX_TURN);
-      voltage -= feedforward(projected_velo, KVFF_TURN, KVFF_INT_TURN);
-      voltage -= feedforward(projected_accel, KAFF_TURN, 0);
-    }
-    printf("\n\nERROR : %.2f      \nangle: %.2f     projected_theta: %.2f\n", turn_pid.error, imu.get_yaw() - angle_offset, projected_theta);
-    if(std::abs(turn_pid.error) <= 1 && projected_theta == target) {
-      printf("I DONT LIKE TO WORK");
-      pwr_intake(0);
-      break;
-
-    }
-
-    volt_chas(voltage, -voltage);
-
-    delay(15);
-  }
-  chassis_stop();
-}*/
 
 void turn(double target, double cruise_v, double accel, bool reverse) {
+  //this will do the same as forward function but it will be for turns instead and used with imu
+  //analogous in some ways
   PID turn_pid(KP_TURN, KI_TURN, KD_TURN);
   Motion_Profile profile(std::abs(cruise_v),std::abs(accel));
   double projected_theta = 0, projected_velo = 0, projected_accel = 0;
@@ -298,10 +217,11 @@ void turn(double target, double cruise_v, double accel, bool reverse) {
 }
 
 
-//arcs not finished
+//arcs for testing motion equations
 void arc_turns(double target_angle, double radius, double cruise_v, double accel, bool reverse) {
   //basically uses purepursuit to get arc_length
-  //mb use velocity pid
+  //this will use PIV and have the curvature equation just gotten form radius given.
+  //will probably not be used for autonomous or skills
   Motion_Profile prof(cruise_v, accel);
   PIV chas_l(KP_FWD,KI_FWD,KV_FWD);
   PIV chas_r(KP_FWD,KI_FWD,KV_FWD);
@@ -318,9 +238,9 @@ void arc_turns(double target_angle, double radius, double cruise_v, double accel
   enc_r.reset();
 
   while(true) {
-    prof.trap_1d(target_dist, projected_pos, projected_velocity, projected_accel);
-    projected_vl = projected_velocity * (2 + curvature * WHEELBASE)/2;
-    projected_vr = projected_velocity * (2 - curvature * WHEELBASE)/2;
+    prof.trap_1d(target_dist, projected_pos, projected_velocity, projected_accel);//update motion profile
+    projected_vl = projected_velocity * (2 + curvature * WHEELBASE)/2; //math is in documentaiton
+    projected_vr = projected_velocity * (2 - curvature * WHEELBASE)/2; // velo = target_velo * (2 +- curvature * trackwidth)/2
     projected_pl += projected_vl * DT * MS_TO_S + 0.5 * projected_accel * DT * DT * MS_TO_S * MS_TO_S;
     projected_pr += projected_vr * DT * MS_TO_S + 0.5 * projected_accel * DT * DT * MS_TO_S * MS_TO_S;
 
@@ -342,7 +262,7 @@ void arc_turns(double target_angle, double radius, double cruise_v, double accel
   }
 }
 
-int closest_index(Path path, std::vector<double> robot, int start) {
+int closest_index(Path path, std::vector<double> robot, int start) {//takes a path and then finds the closest point to the robot
   double dist = 900000;
   double index = 1;
   for(int i = start; i < path.size()-1; i++) {
@@ -358,7 +278,7 @@ int closest_index(Path path, std::vector<double> robot, int start) {
 }
 
 
-Path combine_path(Path path1, Path path2) {
+Path combine_path(Path path1, Path path2) {//combines paths together if need be
   Path comb;
   comb.reserve(path1.size() + path2.size());
   comb.insert(comb.end(), path1.begin(), path2.end());
@@ -366,18 +286,30 @@ Path combine_path(Path path1, Path path2) {
   return comb;
 }
 
-void pwr_intake(int pwr) {
+void pwr_intake(int pwr) {//sends power to intakes -127<=power<=127
   mtr_rollR.move(pwr);
   mtr_rollL.move(pwr);
 }
 
-void pwr_lift(int pwr) {
+void pwr_lift(int pwr) {//sends power to lift -200 <= power <= 200
   mtr_lift.move_velocity(pwr);
 }
 
 int counter = 0;
 
 void pure_pursuiter(Path path, double v, double a, double lookahead, double theta , double theta_end, double max_change, double extra_dist, bool reverse) {
+  /*
+  Pure Pursuit code:
+  it will take the path given and initialize robot path
+  it will take closest path point to robot
+  it will take the closest path point and use that and the next point to follow for pure pursuit
+  pure pursuit algorithm will be used to find curvature
+  curvature allows to get motion equations
+  there will also be an extra distance created to make sure robot follows the end of path and doesn't have too short of 
+  lookahead point.
+  
+  max change will also make sure there is no jerk in the robot
+  */
   Motion_Profile prof(v,a);
   PurePursuit pursuit(lookahead);
   Odometry odo(0,0,theta);
@@ -538,6 +470,8 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
     delay(DT);
   }
   PID turn(KP_TURN,KI_TURN,KD_TURN);
+  //the pure pursuit has inherent pose problem at end of following the robot which means after the path is followed, 
+  //the robot will correct to the target angle/pose
   double turn_power = 0;
   while(true) {
     odo.calculate_state();
@@ -551,7 +485,7 @@ void pure_pursuiter(Path path, double v, double a, double lookahead, double thet
 }
 
 
-void pid_turn(double target) {
+void pid_turn(double target) { //this is raw correction of pid turn to path, this is needed because pid_turns are way faster than normal turns
   PID pid_turn(260,20,1000);
   double angle_offset = imu.get_yaw();
   double power = 0;
@@ -566,10 +500,10 @@ void pid_turn(double target) {
 }
 
 
-void stack() {
+void stack() { //stack code to stack cubes to robot (should be used for 6 cube autons
   double tilt_offset = 0;
 
-  while(!bump.get_value()) {
+  while(!bump.get_value()) { //this is driver control code in order to stack cubes well because it stacked in other driver control well
     if(mtr_tilt.get_position() - tilt_offset < 1000) mtr_tilt.move(127);
     else if (mtr_tilt.get_position() - tilt_offset < 2000) mtr_tilt.move(100);
     else if (mtr_tilt.get_position() - tilt_offset < 3000) mtr_tilt.move(127 - 60);
@@ -587,7 +521,7 @@ void stack() {
   volt_chas(0,0);
   while(!limit.get_value()) {
     mtr_tilt.move(-127);
-    if(mtr_tilt.get_position() - tilt_offset < 2300) break;
+    if(mtr_tilt.get_position() - tilt_offset < 2300) break; //this will pre-emptively back robot 
     delay(15);
   }
 
@@ -600,7 +534,7 @@ void stack() {
 
 }
 
-void skill_stack() {
+void skill_stack() {//this will accommodate for 8 cubes
   double tilt_offset = 0;
 
   while(!bump.get_value()) {
@@ -633,7 +567,7 @@ void skill_stack() {
   chassis_stop();
 }
 
-void aggro_stack() {
+void aggro_stack() {//this will accommodate for 3 cubes
   double tilt_offset = 0;
 
   while(!bump.get_value()) {
@@ -676,15 +610,3 @@ void lift_task(){
   pwr_intake(127);
 }
 
-void blue_auton(){
-  pwr_intake(-127);
-  volt_chas(6000,6000);
-  delay(1000);
-  volt_chas(0,0);
-  delay(250);
-  volt_chas(-6000,-6000);
-  delay(750);
-  volt_chas(0,0);
-  pwr_intake(0);
-
-}

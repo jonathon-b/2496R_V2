@@ -19,10 +19,16 @@ class PurePursuit {
 
   bool update_lk(std::vector<double> start, std::vector<double> end, std::vector<double> robot) {
     //updates variable lk, or the coordinates of lookahead intersection
-
+    /*
+    This algorithm will find the intersection between robot lookahead circle and the path generated in order to find lookahead intersection
+    to calculate the arc that robot will follow.
+    The intersection is given by point t. 
+    The lookahead will be updated because its a public variable, but the boolean returned will be whether an intersection was found 
+    or not.
+    */
     std::vector<double> d = {0,0}; //directional vector from start point to end point
     std::vector<double> f = {0,0}; //directional vector from robot point to end point
-
+ 
     d[X] = end[X] - start[X]; // giving vector d: x and y vector components
     d[Y] = end[Y] - start[Y];
     f[X] = start[X] - robot[X]; //giving vector f: x and y vector components
@@ -67,6 +73,7 @@ class PurePursuit {
 
   int find_side(double heading, std::vector<double> robot) { //need to have lk defined already ... also return 1 or -1 for direction
         //this function returns the side in which the point is relative to robot
+        //it  takes the cross product between robot and lookahead intersection which will point towards where robot should go.
         double temp;
         std::vector<double> c = {0,0};
         c[X] = robot[X] + cos(heading);
@@ -83,9 +90,14 @@ class PurePursuit {
   }
 
   void find_curvature(std::vector<double> robot) {//calculating curvature
+      /*
+      The curvature is calculated by finding the radius of the circle that intersects the robot and the lookahead point.
+      The circle fitted will be concave down to narrow down choices.
+      */
+    
       double a,b,c; //ax +by +c = 0 standard form
       std::vector<double> delta = {0,0}; //delta(difference vector component from lk and robot)
-
+      
       delta[X] = lk[X] - robot[X];
       delta[Y] = lk[Y] - robot[Y];
 
